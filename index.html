@@ -212,10 +212,10 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        // setLogLevel('debug');
+        setLogLevel('debug');
 
         // --- Firestore Collection Reference ---
-        const inventoryCollectionRef = collection(db, `artifacts/${appId}/public/data/inventory`);
+        const inventoryCollectionRef = collection(db, 'inventory');
 
         // --- App State ---
         let currentView = 'production';
@@ -368,14 +368,21 @@
             const destination = productionForm.destination.value;
             if (!pieces || pieces <= 0) return;
 
-            const newItem = {
-                pieces,
-                destination,
-                status: (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A',
-                createdAt: new Date()
-            };
-            await addDoc(inventoryCollectionRef, newItem);
-            productionForm.reset();
+            try {
+                const newItem = {
+                    pieces,
+                    destination,
+                    status: (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A',
+                    createdAt: new Date()
+                };
+                console.log('Adding new item:', newItem);
+                await addDoc(inventoryCollectionRef, newItem);
+                console.log('Item added successfully');
+                productionForm.reset();
+            } catch (error) {
+                console.error('Error adding item:', error);
+                alert('Error saving item: ' + error.message);
+            }
         });
         
         function attachActionListeners() {
@@ -396,12 +403,21 @@
                         itemToDeleteId = id;
                         deleteModal.classList.remove('hidden');
                     } else {
-                        const itemRef = doc(db, `artifacts/${appId}/public/data/inventory`, id);
-                        let newStatus = '';
-                        if (action === 'acknowledge') newStatus = 'Received';
-                        else if (action === 'pay') newStatus = 'Paid';
-                        else if (action === 'receipt') newStatus = 'Receipt Generated';
-                        if (newStatus) await updateDoc(itemRef, { status: newStatus });
+                        try {
+                            const itemRef = doc(db, 'inventory', id);
+                            let newStatus = '';
+                            if (action === 'acknowledge') newStatus = 'Received';
+                            else if (action === 'pay') newStatus = 'Paid';
+                            else if (action === 'receipt') newStatus = 'Receipt Generated';
+                            if (newStatus) {
+                                console.log('Updating item status:', id, 'to', newStatus);
+                                await updateDoc(itemRef, { status: newStatus });
+                                console.log('Status updated successfully');
+                            }
+                        } catch (error) {
+                            console.error('Error updating item:', error);
+                            alert('Error updating item: ' + error.message);
+                        }
                     }
                 });
             });
@@ -414,26 +430,40 @@
             const destination = editForm['edit-destination'].value;
             
             if (id && pieces > 0) {
-                const itemRef = doc(db, `artifacts/${appId}/public/data/inventory`, id);
-                const currentItem = inventory.find(i => i.id === id);
-                
-                const updateData = { pieces, destination };
+                try {
+                    const itemRef = doc(db, 'inventory', id);
+                    const currentItem = inventory.find(i => i.id === id);
+                    
+                    const updateData = { pieces, destination };
 
-                if (currentItem.destination !== destination) {
-                    updateData.status = (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A';
+                    if (currentItem.destination !== destination) {
+                        updateData.status = (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A';
+                    }
+
+                    console.log('Updating item:', id, 'with data:', updateData);
+                    await updateDoc(itemRef, updateData);
+                    console.log('Item updated successfully');
+                    editModal.classList.add('hidden');
+                } catch (error) {
+                    console.error('Error updating item:', error);
+                    alert('Error updating item: ' + error.message);
                 }
-
-                await updateDoc(itemRef, updateData);
-                editModal.classList.add('hidden');
             }
         });
 
         deleteConfirmBtn.addEventListener('click', async () => {
             if (itemToDeleteId) {
-                const itemRef = doc(db, `artifacts/${appId}/public/data/inventory`, itemToDeleteId);
-                await deleteDoc(itemRef);
-                deleteModal.classList.add('hidden');
-                itemToDeleteId = null;
+                try {
+                    const itemRef = doc(db, 'inventory', itemToDeleteId);
+                    console.log('Deleting item:', itemToDeleteId);
+                    await deleteDoc(itemRef);
+                    console.log('Item deleted successfully');
+                    deleteModal.classList.add('hidden');
+                    itemToDeleteId = null;
+                } catch (error) {
+                    console.error('Error deleting item:', error);
+                    alert('Error deleting item: ' + error.message);
+                }
             }
         });
 
