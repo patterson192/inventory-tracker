@@ -39,9 +39,46 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Inventory Tracker</h2>
+                <p class="mt-2 text-center text-sm text-gray-600">Sign in to access your inventory</p>
+            </div>
+            <form id="login-form" class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div>
+                        <label for="email" class="sr-only">Email address</label>
+                        <input id="email" name="email" type="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Email address">
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <input id="password" name="password" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Password">
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Sign in
+                    </button>
+                </div>
+                
+                <div id="login-error" class="text-red-600 text-center text-sm hidden"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App (Hidden until login) -->
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 hidden">
         <header class="mb-8 text-center">
-            <h1 class="text-4xl font-bold text-gray-900">Inventory Tracker</h1>
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-4xl font-bold text-gray-900">Inventory Tracker</h1>
+                <div class="flex items-center space-x-4">
+                    <span id="user-email" class="text-sm text-gray-600"></span>
+                    <button id="logout-btn" class="text-sm text-red-600 hover:text-red-800">Logout</button>
+                </div>
+            </div>
             <p class="mt-2 text-lg text-gray-600">A simple solution for tracking production and payments.</p>
         </header>
 
@@ -156,12 +193,20 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, addDoc, onSnapshot, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-inventory-app';
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlFNjtfk68LHZJMyeYBqGRugh0juXV6AE",
+            authDomain: "inventory-tracker-85848.firebaseapp.com",
+            projectId: "inventory-tracker-85848",
+            storageBucket: "inventory-tracker-85848.firebasestorage.app",
+            messagingSenderId: "411980714677",
+            appId: "1:411980714677:web:4ad98f863150fb3baba4fc",
+            measurementId: "G-8SJD8L6YDZ"
+        };
+        const appId = 'inventory-tracker';
 
         // --- Initialize Firebase ---
         const app = initializeApp(firebaseConfig);
@@ -179,6 +224,12 @@
         let itemToDeleteId = null;
 
         // --- UI Elements ---
+        const loginScreen = document.getElementById('login-screen');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const appContainer = document.getElementById('app');
+        const userEmail = document.getElementById('user-email');
+        const logoutBtn = document.getElementById('logout-btn');
         const productionView = document.getElementById('production-view');
         const kellyView = document.getElementById('kelly-view');
         const robView = document.getElementById('rob-view');
@@ -200,18 +251,39 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
+                userEmail.textContent = user.email;
+                loginScreen.classList.add('hidden');
+                appContainer.classList.remove('hidden');
                 subscribeToInventory();
             } else {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (error) {
-                    console.error("Authentication failed:", error);
-                    loadingIndicator.textContent = "Error: Could not authenticate.";
-                }
+                loginScreen.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                userId = null;
+            }
+        });
+
+        // --- Login Form Handler ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginForm.email.value;
+            const password = loginForm.password.value;
+            
+            try {
+                loginError.classList.add('hidden');
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                console.error("Login failed:", error);
+                loginError.textContent = "Invalid email or password. Please try again.";
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        // --- Logout Handler ---
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout failed:", error);
             }
         });
 
@@ -246,11 +318,12 @@
 
             itemsToRender.forEach(item => {
                 const row = document.createElement('tr');
-                row.className = item.status === 'Paid' ? 'bg-green-50' : '';
+                row.className = (item.status === 'Paid' || item.status === 'Receipt Generated') ? 'bg-green-50' : '';
                 const statusColor = {
                     'In Transit': 'bg-yellow-100 text-yellow-800',
                     'Received': 'bg-blue-100 text-blue-800',
                     'Paid': 'bg-green-100 text-green-800',
+                    'Receipt Generated': 'bg-purple-100 text-purple-800',
                 }[item.status] || 'bg-gray-100 text-gray-800';
 
                 row.innerHTML = `
@@ -269,10 +342,17 @@
         function generateActionButtons(item) {
             let buttons = '';
             if (currentView === 'rob' && item.destination === 'Rob') {
-                if (item.status === 'In Transit') buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Receipt</button>`;
-                if (item.status === 'Received') buttons += `<button data-id="${item.id}" data-action="pay" class="text-green-600 hover:text-green-900">Mark Paid</button>`;
+                if (item.status === 'In Transit') {
+                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
+                } else if (item.status === 'Received') {
+                    buttons += `<button data-id="${item.id}" data-action="pay" class="text-green-600 hover:text-green-900">Mark Paid</button>`;
+                } else if (item.status === 'Paid') {
+                    buttons += `<button data-id="${item.id}" data-action="receipt" class="text-purple-600 hover:text-purple-900">Receipt</button>`;
+                }
             } else if (currentView === 'kelly' && item.destination === 'Kelly') {
-                 if (item.status === 'In Transit') buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Receipt</button>`;
+                 if (item.status === 'In Transit') {
+                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Receipt</button>`;
+                 }
             } else if (currentView === 'production') {
                 buttons += `<button data-id="${item.id}" data-action="edit" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>`;
                 buttons += `<button data-id="${item.id}" data-action="delete" class="text-red-600 hover:text-red-900">Delete</button>`;
@@ -320,6 +400,7 @@
                         let newStatus = '';
                         if (action === 'acknowledge') newStatus = 'Received';
                         else if (action === 'pay') newStatus = 'Paid';
+                        else if (action === 'receipt') newStatus = 'Receipt Generated';
                         if (newStatus) await updateDoc(itemRef, { status: newStatus });
                     }
                 });
@@ -338,7 +419,6 @@
                 
                 const updateData = { pieces, destination };
 
-                // If destination changes, reset status
                 if (currentItem.destination !== destination) {
                     updateData.status = (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A';
                 }
@@ -370,10 +450,6 @@
             for (const key in views) {
                 views[key].style.display = key === view ? 'block' : 'none';
                 buttons[key].classList.toggle('active', key === view);
-            }
-            if (view === 'production') {
-                 views['kelly'].style.display = 'none';
-                 views['rob'].style.display = 'none';
             }
 
             logTitle.textContent = titles[view];
