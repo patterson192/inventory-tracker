@@ -379,17 +379,11 @@
                 } else if ((item.destination === 'Rob' && item.status === 'Received') || 
                           (item.shippedToRob === true && item.status === 'Received')) {
                     buttons += `<button data-id="${item.id}" data-action="pay" class="text-green-600 hover:text-green-900">Mark Paid</button>`;
-                } else if ((item.destination === 'Rob' && item.status === 'Paid') || 
-                          (item.shippedToRob === true && item.status === 'Paid')) {
-                    buttons += `<button data-id="${item.id}" data-action="receipt" class="text-purple-600 hover:text-purple-900">Receipt</button>`;
                 }
             } else if (currentView === 'kelly') {
                 if (item.destination === 'Kelly' && item.status === 'In Transit') {
                     buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Receipt</button>`;
-                } else if (item.destination === 'Kelly' && item.status === 'Received') {
-                    buttons += `<button data-id="${item.id}" data-action="ship-to-rob" class="text-blue-600 hover:text-blue-900 mr-3">Ship to Rob</button>`;
-                    buttons += `<button data-id="${item.id}" data-action="receipt" class="text-purple-600 hover:text-purple-900">Generate Receipt</button>`;
-                } else if (item.destination === 'Kelly' && item.status === 'Receipt Generated') {
+                } else if (item.destination === 'Kelly' && (item.status === 'Received' || item.status === 'Receipt Generated')) {
                     buttons += `<button data-id="${item.id}" data-action="ship-to-rob" class="text-blue-600 hover:text-blue-900">Ship to Rob</button>`;
                 }
             } else if (currentView === 'production') {
