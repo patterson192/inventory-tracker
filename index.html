@@ -387,9 +387,10 @@
             
             if (currentView === 'rob') {
                 // Rob can see items destined for him OR shipped from Kelly to him
-                if (((item.destination === 'Rob' && item.status === 'In Transit') || 
-                     (item.shippedToRob === true && item.status === 'Shipped to Rob') ||
-                     (item.destination === 'Rob' && item.status === 'Paid')) && !item.acknowledged) {
+                // For items shipped from Kelly, Rob should be able to acknowledge regardless of Kelly's acknowledgment
+                if (item.destination === 'Rob' && !item.acknowledged) {
+                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
+                } else if (item.shippedToRob === true && !item.acknowledgedByRob) {
                     buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
                 }
             } else if (currentView === 'kelly') {
@@ -472,6 +473,10 @@
                                 const currentItem = inventory.find(i => i.id === id);
                                 if (currentView === 'rob') {
                                     updateData.status = 'Received';
+                                    // If this is an item shipped from Kelly, mark as acknowledged by Rob
+                                    if (currentItem.shippedToRob === true) {
+                                        updateData.acknowledgedByRob = true;
+                                    }
                                 } else if (currentItem && currentItem.status !== 'Paid') {
                                     updateData.status = 'Received';
                                 }
