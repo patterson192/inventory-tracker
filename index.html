@@ -145,7 +145,8 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipped To</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Production</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Rob</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Rob (Maddie)</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Production (Jack)</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -305,7 +306,7 @@
                 renderInventory();
             }, (error) => {
                 console.error("Error fetching inventory:", error);
-                inventoryLogBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Error loading data.</td></tr>`;
+                inventoryLogBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">Error loading data.</td></tr>`;
             });
         }
 
@@ -323,23 +324,43 @@
                 itemsToRender = inventory.filter(item => item.destination === 'Kelly');
             }
 
-            if (itemsToRender.length === 0) {
-                inventoryLogBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">No items to display.</td></tr>`;
+            if (inventory.length === 0) {
+                inventoryLogBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500">No items to display.</td></tr>`;
                 return;
             }
 
             itemsToRender.forEach(item => {
                 const row = document.createElement('tr');
-                row.className = (item.status === 'Paid' || item.status === 'Receipt Generated') ? 'bg-green-50' : '';
-                const statusColor = {
-                    'In Transit': 'bg-yellow-100 text-yellow-800',
-                    'Received': 'bg-blue-100 text-blue-800',
-                    'Paid': 'bg-green-100 text-green-800',
-                    'Receipt Generated': 'bg-purple-100 text-purple-800',
-                    'Shipped to Rob': 'bg-orange-100 text-orange-800',
-                }[item.status] || 'bg-gray-100 text-gray-800';
+                row.className = (item.status === 'Paid and Received' || item.status === 'Paid and In Transit' || item.status === 'Receipt Generated') ? 'bg-green-50' : '';
+                
+                // Create custom status display for dual status
+                let displayStatus = item.status || 'N/A';
+                let statusColor = 'bg-gray-100 text-gray-800';
+                
+                // Check if item is paid and determine acknowledgment status
+                const isPaid = item.paidToRob || item.paidToProduction || item.paidToProductionRob;
+                const isAcknowledged = item.acknowledged || item.acknowledgedByRob;
+                
+                if (isPaid) {
+                    if (isAcknowledged) {
+                        displayStatus = 'Paid and Received';
+                        statusColor = 'bg-green-100 text-green-800';
+                    } else {
+                        displayStatus = 'Paid and In Transit';
+                        statusColor = 'bg-yellow-100 text-yellow-800';
+                    }
+                } else {
+                    // Use original status colors for non-paid items
+                    statusColor = {
+                        'In Transit': 'bg-yellow-100 text-yellow-800',
+                        'Received': 'bg-blue-100 text-blue-800',
+                        'Paid': 'bg-green-100 text-green-800',
+                        'Receipt Generated': 'bg-purple-100 text-purple-800',
+                        'Shipped to Rob': 'bg-orange-100 text-orange-800',
+                    }[item.status] || 'bg-gray-100 text-gray-800';
+                }
 
-                const shippedTo = item.shippedToRob ? 'Rob' : (item.destination === 'Rob' ? 'Direct to Rob' : '-');
+                const shippedTo = item.shippedToRob ? 'Rob' : (item.destination === 'Rob' ? 'Direct to Rob' : (item.destination === 'Kelly' ? 'Kelly' : '-'));
                 
                 // Format the ID for better display
                 let displayId = 'N/A';
@@ -360,7 +381,7 @@
                     <td class="px-6 py-4"><div class="text-sm text-gray-900 table-cell-truncate" title="${item.id}">${displayId}</div></td>
                     <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${item.pieces}</div></td>
                     <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${item.destination}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${item.status || 'N/A'}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${displayStatus}</span></td>
                     <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${shippedTo}</div></td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         ${(currentView === 'kelly' && item.destination === 'Kelly') ? 
@@ -372,6 +393,12 @@
                         ${(currentView === 'rob' && (item.destination === 'Rob' || item.shippedToRob === true)) ? 
                             `<input type="checkbox" data-id="${item.id}" data-action="pay-rob" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" ${item.paidToRob ? 'checked' : ''}>` : 
                             `<div class="text-sm text-gray-900">${item.paidToRob ? 'Yes' : 'No'}</div>`
+                        }
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${(currentView === 'rob' && item.destination === 'Rob' && !item.shippedToRob) ? 
+                            `<input type="checkbox" data-id="${item.id}" data-action="pay-production-rob" class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" ${item.paidToProductionRob ? 'checked' : ''}>` : 
+                            `<div class="text-sm text-gray-900">${item.paidToProductionRob ? 'Yes' : 'No'}</div>`
                         }
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${generateActionButtons(item)}</td>
@@ -485,7 +512,7 @@
                             } else if (action === 'receipt') {
                                 updateData.status = 'Receipt Generated';
                             } else if (action === 'ship-to-rob') {
-                                updateData.status = 'Shipped to Rob';
+                                updateData.status = 'Paid and In Transit';
                                 updateData.shippedToRob = true;
                                 updateData.shippedDate = new Date();
                             }
@@ -534,6 +561,26 @@
                         console.log('Updating Rob payment for item:', id, 'with data:', updateData);
                         await updateDoc(itemRef, updateData);
                         console.log('Rob payment updated successfully');
+                    }
+                });
+            });
+
+            // Handle checkbox for Rob's payment to Production (Rob's view)
+            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-production-rob"]').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    const id = e.target.dataset.id;
+                    const item = inventory.find(i => i.id === id);
+                    if (item) {
+                        const itemRef = doc(db, 'inventory', id);
+                        const updateData = { 
+                            paidToProductionRob: e.target.checked,
+                            paidToProduction: e.target.checked, // Also update the main production payment field
+                            status: e.target.checked ? 'Paid' : 'In Transit'
+                        };
+                        
+                        console.log('Updating Rob payment to Production for item:', id, 'with data:', updateData);
+                        await updateDoc(itemRef, updateData);
+                        console.log('Rob payment to Production updated successfully');
                     }
                 });
             });
