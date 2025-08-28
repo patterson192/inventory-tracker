@@ -1222,6 +1222,14 @@
         });
         
         function attachEventListeners() {
+            // Remove existing listeners to prevent duplicates
+            document.querySelectorAll('button[data-id]').forEach(button => {
+                button.replaceWith(button.cloneNode(true));
+            });
+            document.querySelectorAll('input[type="checkbox"][data-action]').forEach(checkbox => {
+                checkbox.replaceWith(checkbox.cloneNode(true));
+            });
+
             // Action buttons
             document.querySelectorAll('button[data-id]').forEach(button => {
                 button.addEventListener('click', async (e) => {
@@ -1245,12 +1253,19 @@
                 });
             });
 
-            // Payment checkboxes
+            // Payment checkboxes with explicit event handling
             document.querySelectorAll('input[type="checkbox"][data-action]').forEach(checkbox => {
                 checkbox.addEventListener('change', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     const id = e.target.dataset.id;
                     const action = e.target.dataset.action;
-                    await handlePaymentChange(id, action, e.target.checked);
+                    const checked = e.target.checked;
+                    
+                    console.log(`Checkbox clicked: ID=${id}, Action=${action}, Checked=${checked}`);
+                    
+                    await handlePaymentChange(id, action, checked);
                 });
             });
         }
@@ -1333,7 +1348,8 @@
                         }
                     }
 
-                                async function handlePaymentChange(id, action, checked) {
+                                                async function handlePaymentChange(id, action, checked) {
+            console.log(`handlePaymentChange called: ID=${id}, Action=${action}, Checked=${checked}`);
             try {
                         const itemRef = doc(db, 'inventory', id);
                 let updateData = {};
@@ -1346,17 +1362,23 @@
                     updateData.status = checked ? 'Paid' : 'Received';
                 }
                 
+                console.log('Update data:', updateData);
+                
                 // Update Firebase
                         await updateDoc(itemRef, updateData);
+                console.log('Firebase updated successfully');
                 
                 // Immediately update local inventory data
                 const localItem = inventory.find(item => item.id === id);
                 if (localItem) {
                     Object.assign(localItem, updateData);
+                    console.log('Local inventory updated:', localItem);
                 }
                 
                 // Force re-render all views to sync checkboxes
+                console.log('Rendering all views...');
                 renderAllViews();
+                console.log('All views rendered');
                 
             } catch (error) {
                 console.error('Error updating payment:', error);
