@@ -982,41 +982,28 @@
                 const toInput = document.getElementById(`${view}-date-to`);
                 
                 if (fromInput) {
-                    console.log(`Setting up ${view} from filter`);
                     fromInput.addEventListener('change', (e) => {
-                        console.log(`${view} from date changed to:`, e.target.value);
                         dateFilters[view].from = e.target.value;
                         renderInventory();
                     });
-                } else {
-                    console.log(`Could not find ${view}-date-from input`);
                 }
                 
                 if (toInput) {
-                    console.log(`Setting up ${view} to filter`);
                     toInput.addEventListener('change', (e) => {
-                        console.log(`${view} to date changed to:`, e.target.value);
                         dateFilters[view].to = e.target.value;
                         renderInventory();
                     });
-                } else {
-                    console.log(`Could not find ${view}-date-to input`);
                 }
             });
         }
 
         function filterByDateRange(items, dateFilter) {
-            console.log('Filtering with date filter:', dateFilter);
-            console.log('Items before filter:', items.length);
-            
             if (!dateFilter.from && !dateFilter.to) {
-                console.log('No date filter applied, returning all items');
                 return items;
             }
             
-            const filtered = items.filter(item => {
+            return items.filter(item => {
                 if (!item.createdAt) {
-                    console.log('Item has no createdAt:', item.id);
                     return false;
                 }
                 
@@ -1030,23 +1017,16 @@
                     const fromDate = new Date(dateFilter.from);
                     fromDate.setHours(0, 0, 0, 0);
                     matchesFrom = itemDate >= fromDate;
-                    console.log(`Item ${item.id} date ${itemDate.toDateString()} >= from ${fromDate.toDateString()}:`, matchesFrom);
                 }
                 
                 if (dateFilter.to) {
                     const toDate = new Date(dateFilter.to);
                     toDate.setHours(23, 59, 59, 999);
                     matchesTo = itemDate <= toDate;
-                    console.log(`Item ${item.id} date ${itemDate.toDateString()} <= to ${toDate.toDateString()}:`, matchesTo);
                 }
                 
-                const matches = matchesFrom && matchesTo;
-                console.log(`Item ${item.id} matches filter:`, matches);
-                return matches;
+                return matchesFrom && matchesTo;
             });
-            
-            console.log('Items after filter:', filtered.length);
-            return filtered;
         }
 
         // --- Rendering Logic ---
@@ -1353,7 +1333,7 @@
                         }
                     }
 
-                async function handlePaymentChange(id, action, checked) {
+                                async function handlePaymentChange(id, action, checked) {
             try {
                         const itemRef = doc(db, 'inventory', id);
                 let updateData = {};
@@ -1375,8 +1355,8 @@
                     Object.assign(localItem, updateData);
                 }
                 
-                // Immediately sync all checkboxes across all views
-                syncCheckboxAcrossViews(id, action, checked);
+                // Force re-render all views to sync checkboxes
+                renderAllViews();
                 
             } catch (error) {
                 console.error('Error updating payment:', error);
@@ -1384,14 +1364,45 @@
             }
         }
 
-        function syncCheckboxAcrossViews(id, action, checked) {
-            // Find all checkboxes with the same ID and action across all views
-            const checkboxes = document.querySelectorAll(`input[data-id="${id}"][data-action="${action}"]`);
-            checkboxes.forEach(checkbox => {
-                if (checkbox.checked !== checked) {
-                    checkbox.checked = checked;
+        function renderAllViews() {
+            // Store current view
+            const originalView = currentView;
+            
+            // Render all three views
+            ['production', 'kelly', 'rob'].forEach(view => {
+                const container = document.getElementById(`${view}-inventory`);
+                if (container) {
+                    currentView = view;
+                    const currentFilter = dateFilters[view];
+                    
+                    let itemsToRender = inventory;
+                    
+                    if (view === 'kelly') {
+                        itemsToRender = inventory.filter(item => item.destination === 'Kelly');
+                    } else if (view === 'rob') {
+                        itemsToRender = inventory.filter(item => 
+                            item.destination === 'Rob' || item.shippedToRob === true
+                        );
+                    }
+                    
+                    // Apply date filter
+                    itemsToRender = filterByDateRange(itemsToRender, currentFilter);
+                    
+                    if (itemsToRender.length === 0) {
+                        const hasDateFilter = currentFilter.from || currentFilter.to;
+                        const message = hasDateFilter ? 'No items found for selected date range' : 'No items to display';
+                        container.innerHTML = `<div class="no-items">${message}</div>`;
+                    } else {
+                        container.innerHTML = itemsToRender.map(item => renderInventoryItem(item)).join('');
+                    }
                 }
             });
+            
+            // Restore original view
+            currentView = originalView;
+            
+            // Re-attach event listeners for all views
+            attachEventListeners();
         }
 
         editForm.addEventListener('submit', async (e) => {
