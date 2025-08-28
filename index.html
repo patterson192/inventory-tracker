@@ -6,22 +6,349 @@
     <title>Multi-Facility Inventory Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        .view-toggle-button.active {
-            background-color: #4F46E5;
-            color: white;
-        }
-        .view-toggle-button {
-            transition: background-color 0.3s, color 0.3s;
-        }
-        .table-cell-truncate {
-            max-width: 150px;
-            white-space: normal;
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
             overflow: hidden;
-            word-wrap: break-word;
         }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-email {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Login Screen Styles */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #7f8c8d;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-error {
+            background: #fee;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .facility-selector {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .facility-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .facility-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .facility-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            transform: translateY(-3px);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .facility-panel {
+            display: none;
+        }
+
+        .facility-panel.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .panel-header h2 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .section h3 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-row label {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 120px;
+        }
+
+        .form-row input, .form-row select {
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .form-row input:focus, .form-row select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #e67e22, #f39c12);
+        }
+
+        .inventory-item {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .inventory-item:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .inventory-item.paid {
+            border-left-color: #2ecc71;
+            background: linear-gradient(135deg, #d5f4e6, #fdfefe);
+        }
+
+        .inventory-item.received {
+            border-left-color: #f39c12;
+            background: linear-gradient(135deg, #fff3cd, #fdfefe);
+        }
+
+        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -33,150 +360,229 @@
             align-items: center;
             justify-content: center;
             z-index: 50;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .facility-selector {
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+
+            .facility-btn {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .form-row label {
+                min-width: auto;
+                font-size: 1rem;
+            }
+
+            .form-row input, .form-row select {
+                max-width: none;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 15px;
+                font-size: 1.1rem;
+                margin-right: 0;
+            }
+
+            .panel-header {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .panel-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .section h3 {
+                font-size: 1.2rem;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
 
     <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <div>
-                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Inventory Tracker</h2>
-                <p class="mt-2 text-center text-sm text-gray-600">Sign in to access your inventory</p>
+    <div id="login-screen" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2>Multi-Facility Inventory Tracker</h2>
+                <p>Sign in to access your inventory</p>
             </div>
-            <form id="login-form" class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <div>
-                        <label for="email" class="sr-only">Email address</label>
-                        <input id="email" name="email" type="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Email address">
-                    </div>
-                    <div>
-                        <label for="password" class="sr-only">Password</label>
-                        <input id="password" name="password" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Password">
-                    </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input id="email" name="email" type="email" required placeholder="Enter your email">
                 </div>
-
-                <div>
-                    <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Sign in
-                    </button>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" required placeholder="Enter your password">
                 </div>
-                
-                <div id="login-error" class="text-red-600 text-center text-sm hidden"></div>
+                <button type="submit" class="login-btn">Sign in</button>
+                <div id="login-error" class="login-error"></div>
             </form>
         </div>
     </div>
 
-    <!-- Main App (Hidden until login) -->
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 hidden">
-        <header class="mb-8 text-center">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-4xl font-bold text-gray-900">Inventory Tracker</h1>
-                <div class="flex items-center space-x-4">
-                    <span id="user-email" class="text-sm text-gray-600"></span>
-                    <button id="logout-btn" class="text-sm text-red-600 hover:text-red-800">Logout</button>
+    <!-- Main App -->
+    <div id="app" class="container hidden">
+        <div class="header">
+            <h1>Multi-Facility Inventory Tracker</h1>
+            <p>Streamlined shipment management for Jack, Kelly, and Rob facilities</p>
+            <div class="user-info">
+                <span id="user-email" class="user-email"></span>
+                <button id="logout-btn" class="logout-btn">Logout</button>
+            </div>
+        </div>
+
+        <div class="facility-selector">
+            <button class="facility-btn active" onclick="switchView('production')">Production (Jack)</button>
+            <button class="facility-btn" onclick="switchView('kelly')">Kelly's Facility</button>
+            <button class="facility-btn" onclick="switchView('rob')">Rob's Facility</button>
+        </div>
+
+        <div class="content">
+            <div id="loading-indicator" class="loading-indicator hidden">
+                Loading Inventory Data...
+            </div>
+
+            <!-- Production Panel -->
+            <div id="production-panel" class="facility-panel active">
+                <div class="panel-header">
+                    <h2>Production Dashboard</h2>
+                    <p>Create and manage outbound shipments</p>
+                </div>
+
+                <div class="section">
+                    <h3>Log New Production</h3>
+                    <form id="production-form">
+                        <div class="form-row">
+                            <label>Number of Pieces:</label>
+                            <input type="number" id="pieces" name="pieces" required min="1" placeholder="Enter number of pieces">
+                        </div>
+                        <div class="form-row">
+                            <label>Destination:</label>
+                            <select id="destination" name="destination">
+                                <option value="Kelly">Kelly's Facility</option>
+                                <option value="Rob">Rob's Facility</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn">Create Shipment</button>
+                    </form>
+                </div>
+
+                <div class="section">
+                    <h3>All Inventory Items</h3>
+                    <div id="production-inventory"></div>
                 </div>
             </div>
-            <p class="mt-2 text-lg text-gray-600">A simple solution for tracking production and payments.</p>
-        </header>
 
-        <!-- View Toggler -->
-        <div class="flex justify-center mb-8 bg-gray-200 rounded-lg p-1 max-w-md mx-auto">
-            <button id="production-view-btn" class="view-toggle-button w-1/3 p-2 rounded-md font-semibold text-gray-700 active">Production</button>
-            <button id="kelly-view-btn" class="view-toggle-button w-1/3 p-2 rounded-md font-semibold text-gray-700">Kelly</button>
-            <button id="rob-view-btn" class="view-toggle-button w-1/3 p-2 rounded-md font-semibold text-gray-700">Rob</button>
-        </div>
-        
-        <div id="loading-indicator" class="text-center py-8">
-            <p class="text-lg font-semibold text-indigo-600">Loading Inventory Data...</p>
-        </div>
+            <!-- Kelly's Panel -->
+            <div id="kelly-panel" class="facility-panel">
+                <div class="panel-header">
+                    <h2>Kelly's Facility Dashboard</h2>
+                    <p>Receive shipments and manage inventory</p>
+                </div>
 
-        <!-- Production View -->
-        <div id="production-view">
-            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Log New Production</h2>
-                <form id="production-form" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label for="pieces" class="block text-sm font-medium text-gray-700">Number of Pieces</label>
-                        <input type="number" id="pieces" name="pieces" required class="mt-1 block w-full rounded-md border-2 border-gray-800 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                    </div>
-                    <div>
-                        <label for="destination" class="block text-sm font-medium text-gray-700">Destination</label>
-                        <select id="destination" name="destination" class="mt-1 block w-full rounded-md border-2 border-gray-800 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                            <option value="Kelly">Kelly</option>
-                            <option value="Rob">Rob</option>
-                        </select>
-                    </div>
-                    <div class="sm:pt-6">
-                        <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add to Log</button>
-                    </div>
-                </form>
+                <div class="section">
+                    <h3>Items for Kelly</h3>
+                    <div id="kelly-inventory"></div>
+                </div>
             </div>
-        </div>
 
-        <!-- Kelly's View -->
-        <div id="kelly-view" class="hidden">
-             <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Kelly's Receiving Portal</h2>
-                <p class="text-gray-600">Items sent to Kelly will appear here. You can acknowledge receipt and ship to Rob.</p>
-            </div>
-        </div>
+            <!-- Rob's Panel -->
+            <div id="rob-panel" class="facility-panel">
+                <div class="panel-header">
+                    <h2>Rob's Facility Dashboard</h2>
+                    <p>Receive shipments and manage payment tracking</p>
+                </div>
 
-        <!-- Rob's View -->
-        <div id="rob-view" class="hidden">
-             <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Rob's Receiving Portal</h2>
-                <p class="text-gray-600">Items sent to Rob will appear here. You can acknowledge receipt and mark them as paid.</p>
-            </div>
-        </div>
-        
-        <!-- Inventory Log (Shared by all views) -->
-        <div class="bg-white p-6 rounded-xl shadow-md">
-            <h2 id="log-title" class="text-2xl font-bold mb-4 text-gray-800">Full Inventory Log</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location & Date</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pieces</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipped To</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Production</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Rob (Maddie)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Production (Jack)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-log" class="bg-white divide-y divide-gray-200">
-                        <!-- Rows will be injected here by JavaScript -->
-                    </tbody>
-                </table>
+                <div class="section">
+                    <h3>Items for Rob</h3>
+                    <div id="rob-inventory"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Edit Modal -->
     <div id="edit-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4">Edit Inventory Item</h3>
+        <div class="modal-content">
+            <h3 class="modal-header">Edit Inventory Item</h3>
             <form id="edit-form">
                 <input type="hidden" id="edit-id">
-                <div class="mb-4">
-                    <label for="edit-pieces" class="block text-sm font-medium text-gray-700">Number of Pieces</label>
-                    <input type="number" id="edit-pieces" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                <div class="form-group">
+                    <label for="edit-pieces">Number of Pieces</label>
+                    <input type="number" id="edit-pieces" required min="1">
                 </div>
-                <div class="mb-4">
-                    <label for="edit-destination" class="block text-sm font-medium text-gray-700">Destination</label>
-                    <select id="edit-destination" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-                        <option value="Kelly">Kelly</option>
-                        <option value="Rob">Rob</option>
+                <div class="form-group">
+                    <label for="edit-destination">Destination</label>
+                    <select id="edit-destination">
+                        <option value="Kelly">Kelly's Facility</option>
+                        <option value="Rob">Rob's Facility</option>
                     </select>
                 </div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" id="edit-cancel-btn" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                    <button type="submit" class="py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save Changes</button>
+                <div class="modal-buttons">
+                    <button type="button" id="edit-cancel-btn" class="btn">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -184,12 +590,12 @@
 
     <!-- Delete Confirmation Modal -->
     <div id="delete-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-            <h3 class="text-xl font-bold mb-2">Confirm Deletion</h3>
-            <p class="text-gray-600 mb-4">Are you sure you want to delete this item? This action cannot be undone.</p>
-            <div class="flex justify-end space-x-2">
-                <button type="button" id="delete-cancel-btn" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                <button type="button" id="delete-confirm-btn" class="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
+        <div class="modal-content">
+            <h3 class="modal-header">Confirm Deletion</h3>
+            <p>Are you sure you want to delete this item? This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button type="button" id="delete-cancel-btn" class="btn">Cancel</button>
+                <button type="button" id="delete-confirm-btn" class="btn btn-danger">Delete</button>
             </div>
         </div>
     </div>
