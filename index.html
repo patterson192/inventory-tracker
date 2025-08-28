@@ -390,6 +390,53 @@
             display: none !important;
         }
 
+        .ship-to-rob-section {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 2px solid #f39c12;
+        }
+
+        .ship-to-rob-section .form-row {
+            margin-bottom: 10px !important;
+        }
+
+        .ship-to-rob-section label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-received {
+            background: #d5f4e6;
+            color: #155724;
+        }
+
+        .status-paid {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-in-transit {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .status-partially-shipped {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-shipped-to-rob {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .facility-selector {
@@ -471,17 +518,17 @@
                 <div class="form-group">
                     <label for="email">Email address</label>
                     <input id="email" name="email" type="email" required placeholder="Enter your email">
-                </div>
+                    </div>
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input id="password" name="password" type="password" required placeholder="Enter your password">
-                </div>
+                    </div>
                 <button type="submit" class="login-btn">Sign in</button>
                 <div id="login-error" class="login-error"></div>
             </form>
-        </div>
-    </div>
-
+                </div>
+                </div>
+                
     <!-- Main App -->
     <div id="app" class="container hidden">
         <div class="header">
@@ -490,26 +537,26 @@
             <div class="user-info">
                 <span id="user-email" class="user-email"></span>
                 <button id="logout-btn" class="logout-btn">Logout</button>
-            </div>
         </div>
+    </div>
 
         <div class="facility-selector">
             <button class="facility-btn active" onclick="switchView('production')">Production (Jack)</button>
             <button class="facility-btn" onclick="switchView('kelly')">Kelly's Facility</button>
             <button class="facility-btn" onclick="switchView('rob')">Rob's Facility</button>
-        </div>
+                </div>
 
         <div class="content">
             <div id="loading-indicator" class="loading-indicator hidden">
                 Loading Inventory Data...
-            </div>
-
+        </div>
+        
             <!-- Production Panel -->
             <div id="production-panel" class="facility-panel active">
                 <div class="panel-header">
                     <h2>Production Dashboard</h2>
                     <p>Create and manage outbound shipments</p>
-                </div>
+        </div>
 
                 <div class="section">
                     <h3>Log New Production</h3>
@@ -517,23 +564,23 @@
                         <div class="form-row">
                             <label>Number of Pieces:</label>
                             <input type="number" id="pieces" name="pieces" required min="1" placeholder="Enter number of pieces">
-                        </div>
+                    </div>
                         <div class="form-row">
                             <label>Destination:</label>
                             <select id="destination" name="destination">
                                 <option value="Kelly">Kelly's Facility</option>
                                 <option value="Rob">Rob's Facility</option>
-                            </select>
-                        </div>
+                        </select>
+                    </div>
                         <button type="submit" class="btn">Create Shipment</button>
-                    </form>
-                </div>
+                </form>
+        </div>
 
                 <div class="section">
                     <h3>All Inventory Items</h3>
                     <div id="production-inventory"></div>
-                </div>
             </div>
+        </div>
 
             <!-- Kelly's Panel -->
             <div id="kelly-panel" class="facility-panel">
@@ -545,9 +592,9 @@
                 <div class="section">
                     <h3>Items for Kelly</h3>
                     <div id="kelly-inventory"></div>
-                </div>
             </div>
-
+        </div>
+        
             <!-- Rob's Panel -->
             <div id="rob-panel" class="facility-panel">
                 <div class="panel-header">
@@ -756,39 +803,39 @@
 
         function renderInventoryItem(item) {
             // Determine status and styling
-            const isPaid = item.paidToRob || item.paidToProduction || item.paidToProductionRob;
-            const isAcknowledged = item.acknowledged || item.acknowledgedByRob;
+                const isPaid = item.paidToRob || item.paidToProduction || item.paidToProductionRob;
+                const isAcknowledged = item.acknowledged || item.acknowledgedByRob;
             
             let statusClass = '';
             let statusBadge = '';
-            
-            if (isPaid) {
-                if (isAcknowledged) {
+                
+                if (isPaid) {
+                    if (isAcknowledged) {
                     statusClass = 'paid';
                     statusBadge = '<span class="status-badge status-paid">Paid & Received</span>';
-                } else {
+                    } else {
                     statusClass = 'received';
                     statusBadge = '<span class="status-badge status-pending">Paid & In Transit</span>';
-                }
-            } else {
+                    }
+                } else {
                 statusClass = item.status === 'Received' ? 'received' : '';
                 statusBadge = `<span class="status-badge status-${item.status ? item.status.toLowerCase().replace(' ', '-') : 'pending'}">${item.status || 'Pending'}</span>`;
             }
 
             // Format ID for display
-            let displayId = 'N/A';
-            if (item.id) {
-                const parts = item.id.split('-');
-                if (parts.length >= 6) {
-                    const location = parts[0];
-                    const date = `${parts[1]}-${parts[2]}-${parts[3]}`;
-                    const time = `${parts[4]}:${parts[5]}:${parts[6] || '00'}`;
+                let displayId = 'N/A';
+                if (item.id) {
+                    const parts = item.id.split('-');
+                    if (parts.length >= 6) {
+                        const location = parts[0];
+                        const date = `${parts[1]}-${parts[2]}-${parts[3]}`;
+                        const time = `${parts[4]}:${parts[5]}:${parts[6] || '00'}`;
                     displayId = `${location} • ${date} • ${time}`;
-                } else {
-                    displayId = item.id.replace(/-/g, ' ');
+                    } else {
+                        displayId = item.id.replace(/-/g, ' ');
+                    }
                 }
-            }
-
+                
             // Generate action buttons
             const actionButtons = generateActionButtons(item);
 
@@ -839,7 +886,15 @@
                 if (item.destination === 'Kelly' && (item.status === 'In Transit' || item.status === 'Paid') && !item.acknowledged) {
                     buttons += `<button class="btn btn-success" data-id="${item.id}" data-action="acknowledge">Acknowledge Receipt</button>`;
                 } else if (item.destination === 'Kelly' && ((item.status === 'Received' || item.status === 'Paid') || item.acknowledged) && !item.shippedToRob) {
-                    buttons += `<button class="btn btn-warning" data-id="${item.id}" data-action="ship-to-rob">Ship to Rob</button>`;
+                    buttons += `
+                        <div class="ship-to-rob-section">
+                            <div class="form-row" style="margin-bottom: 10px;">
+                                <label for="ship-pieces-${item.id}">Pieces to ship to Rob:</label>
+                                <input type="number" id="ship-pieces-${item.id}" min="1" max="${item.pieces}" placeholder="Enter pieces" style="max-width: 150px;">
+                            </div>
+                            <button class="btn btn-warning" data-id="${item.id}" data-action="ship-to-rob">Ship to Rob</button>
+                        </div>
+                    `;
                 }
             } else if (currentView === 'production') {
                 buttons += `<button class="btn" data-id="${item.id}" data-action="edit">Edit</button>`;
@@ -954,39 +1009,86 @@
         }
 
         async function handleItemAction(id, action) {
-            try {
-                const itemRef = doc(db, 'inventory', id);
-                let updateData = {};
-                
-                if (action === 'acknowledge') {
-                    updateData.acknowledged = true;
-                    const currentItem = inventory.find(i => i.id === id);
-                    if (currentView === 'rob') {
-                        updateData.status = 'Received';
-                        if (currentItem.shippedToRob === true) {
-                            updateData.acknowledgedByRob = true;
-                        }
-                    } else if (currentItem && currentItem.status !== 'Paid') {
-                        updateData.status = 'Received';
+                        try {
+                            const itemRef = doc(db, 'inventory', id);
+                            let updateData = {};
+                            
+                            if (action === 'acknowledge') {
+                                updateData.acknowledged = true;
+                                const currentItem = inventory.find(i => i.id === id);
+                                if (currentView === 'rob') {
+                                    updateData.status = 'Received';
+                                    if (currentItem.shippedToRob === true) {
+                                        updateData.acknowledgedByRob = true;
+                                    }
+                                } else if (currentItem && currentItem.status !== 'Paid') {
+                                    updateData.status = 'Received';
+                                }
+                            } else if (action === 'ship-to-rob') {
+                    // Get the number of pieces to ship from the input field
+                    const piecesInput = document.getElementById(`ship-pieces-${id}`);
+                    const piecesToShip = piecesInput ? parseInt(piecesInput.value) : 0;
+                    
+                    if (!piecesToShip || piecesToShip <= 0) {
+                        alert('Please enter a valid number of pieces to ship');
+                        return;
                     }
-                } else if (action === 'ship-to-rob') {
-                    updateData.status = 'Paid and In Transit';
-                    updateData.shippedToRob = true;
-                    updateData.shippedDate = new Date();
-                }
-                
-                if (Object.keys(updateData).length > 0) {
-                    await updateDoc(itemRef, updateData);
-                }
-            } catch (error) {
-                console.error('Error updating item:', error);
-                alert('Error updating item: ' + error.message);
-            }
-        }
+                    
+                    const currentItem = inventory.find(i => i.id === id);
+                    if (piecesToShip > currentItem.pieces) {
+                        alert(`Cannot ship more pieces than available (${currentItem.pieces})`);
+                        return;
+                    }
+                    
+                    // Create a new shipment to Rob with the specified pieces
+                    const now = new Date();
+                    const dateStr = now.toISOString().split('T')[0];
+                    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+                    const newShipmentId = `Rob-${dateStr}-${timeStr}-from-Kelly`;
+                    
+                    const newShipment = {
+                        id: newShipmentId,
+                        pieces: piecesToShip,
+                        destination: 'Rob',
+                        status: 'In Transit',
+                        createdAt: now,
+                        location: 'Rob',
+                        productionDate: currentItem.productionDate || dateStr,
+                        shippedToRob: true,
+                        shippedFromKelly: true,
+                        originalKellyItemId: id,
+                        shippedDate: now
+                    };
+                    
+                    // Create the new shipment
+                    const newShipmentRef = doc(db, 'inventory', newShipmentId);
+                    await setDoc(newShipmentRef, newShipment);
+                    
+                    // Update the original Kelly item to reduce pieces
+                    const remainingPieces = currentItem.pieces - piecesToShip;
+                    if (remainingPieces > 0) {
+                        updateData.pieces = remainingPieces;
+                        updateData.status = 'Partially Shipped';
+                    } else {
+                        // If all pieces shipped, mark as shipped to Rob
+                        updateData.status = 'Shipped to Rob';
+                                updateData.shippedToRob = true;
+                        updateData.shippedDate = now;
+                    }
+                            }
+                            
+                            if (Object.keys(updateData).length > 0) {
+                                await updateDoc(itemRef, updateData);
+                            }
+                        } catch (error) {
+                            console.error('Error updating item:', error);
+                            alert('Error updating item: ' + error.message);
+                        }
+                    }
 
         async function handlePaymentChange(id, action, checked) {
             try {
-                const itemRef = doc(db, 'inventory', id);
+                        const itemRef = doc(db, 'inventory', id);
                 let updateData = {};
                 
                 if (action === 'pay-production') {
@@ -1000,7 +1102,7 @@
                     updateData.status = checked ? 'Paid' : 'In Transit';
                 }
                 
-                await updateDoc(itemRef, updateData);
+                        await updateDoc(itemRef, updateData);
             } catch (error) {
                 console.error('Error updating payment:', error);
                 alert('Error updating payment: ' + error.message);
