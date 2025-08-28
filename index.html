@@ -1161,73 +1161,17 @@
         function generatePaymentCheckboxes(item) {
             let checkboxes = '';
             
-            // Show all relevant payment checkboxes for each view
-            if (currentView === 'production') {
-                // Production view shows all payment statuses
-                checkboxes += `
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
-                        <label for="pay-production-${item.id}">💰 Paid to Production</label>
-                    </div>
-                `;
-                
-                if (item.destination === 'Rob' || item.shippedToRob === true) {
-                    checkboxes += `
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
-                            <label for="pay-rob-${item.id}">💰 Paid to Rob (Maddie)</label>
-                        </div>
-                    `;
-                }
-                
-                if (item.destination === 'Rob' && !item.shippedToRob) {
-                    checkboxes += `
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="pay-production-rob-${item.id}" data-id="${item.id}" data-action="pay-production-rob" ${item.paidToProductionRob ? 'checked' : ''}>
-                            <label for="pay-production-rob-${item.id}">💰 Paid to Production (Jack)</label>
-                        </div>
-                    `;
-                }
-            } else if (currentView === 'kelly') {
-                checkboxes += `
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
-                        <label for="pay-production-${item.id}">💰 Paid to Production</label>
-                    </div>
-                `;
-                
-                if (item.shippedToRob === true) {
-                    checkboxes += `
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
-                            <label for="pay-rob-${item.id}">💰 Paid to Rob (Maddie)</label>
-                        </div>
-                    `;
-                }
-            } else if (currentView === 'rob') {
-                checkboxes += `
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
-                        <label for="pay-rob-${item.id}">💰 Paid to Rob (Maddie)</label>
-                    </div>
-                `;
-                
-                if (item.destination === 'Rob' && !item.shippedToRob) {
-                    checkboxes += `
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="pay-production-rob-${item.id}" data-id="${item.id}" data-action="pay-production-rob" ${item.paidToProductionRob ? 'checked' : ''}>
-                            <label for="pay-production-rob-${item.id}">💰 Paid to Production (Jack)</label>
-                        </div>
-                    `;
-                }
-                
-                checkboxes += `
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
-                        <label for="pay-production-${item.id}">💰 Paid to Production</label>
-                    </div>
-                `;
-            }
+            // Only show two payment checkboxes: Paid to Production (Jack) and Paid to Rob
+            checkboxes += `
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
+                    <label for="pay-production-${item.id}">💰 Paid to Production (Jack)</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
+                    <label for="pay-rob-${item.id}">💰 Paid to Rob</label>
+                </div>
+            `;
             
             return checkboxes;
         }
@@ -1388,13 +1332,10 @@
                 
                 if (action === 'pay-production') {
                     updateData.paidToProduction = checked;
+                    updateData.paidToProductionRob = checked; // Keep both fields in sync
                 } else if (action === 'pay-rob') {
                     updateData.paidToRob = checked;
                     updateData.status = checked ? 'Paid' : 'Received';
-                } else if (action === 'pay-production-rob') {
-                    updateData.paidToProductionRob = checked;
-                    updateData.paidToProduction = checked;
-                    updateData.status = checked ? 'Paid' : 'In Transit';
                 }
                 
                 await updateDoc(itemRef, updateData);
