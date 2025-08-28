@@ -896,6 +896,7 @@
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 subscribeToInventory();
+                setupPaymentCheckboxDelegation(); // Setup checkbox event delegation
             } else {
                 loginScreen.classList.remove('hidden');
                 appContainer.classList.add('hidden');
@@ -1226,9 +1227,6 @@
             document.querySelectorAll('button[data-id]').forEach(button => {
                 button.replaceWith(button.cloneNode(true));
             });
-            document.querySelectorAll('input[type="checkbox"][data-action]').forEach(checkbox => {
-                checkbox.replaceWith(checkbox.cloneNode(true));
-            });
 
             // Action buttons
             document.querySelectorAll('button[data-id]').forEach(button => {
@@ -1252,22 +1250,31 @@
                     }
                 });
             });
+        }
 
-            // Payment checkboxes with explicit event handling
-            document.querySelectorAll('input[type="checkbox"][data-action]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const id = e.target.dataset.id;
-                    const action = e.target.dataset.action;
-                    const checked = e.target.checked;
-                    
-                    console.log(`Checkbox clicked: ID=${id}, Action=${action}, Checked=${checked}`);
-                    
-                    await handlePaymentChange(id, action, checked);
-                });
-            });
+        // Use event delegation for payment checkboxes to ensure they always work
+        function setupPaymentCheckboxDelegation() {
+            // Remove any existing delegated listener
+            document.removeEventListener('change', handleCheckboxDelegation);
+            
+            // Add new delegated listener
+            document.addEventListener('change', handleCheckboxDelegation);
+        }
+
+        async function handleCheckboxDelegation(e) {
+            // Check if the changed element is a payment checkbox
+            if (e.target.type === 'checkbox' && e.target.dataset.action && e.target.dataset.id) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const id = e.target.dataset.id;
+                const action = e.target.dataset.action;
+                const checked = e.target.checked;
+                
+                console.log(`Delegated checkbox clicked: ID=${id}, Action=${action}, Checked=${checked}`);
+                
+                await handlePaymentChange(id, action, checked);
+            }
         }
 
         async function handleItemAction(id, action) {
@@ -1348,7 +1355,7 @@
                         }
                     }
 
-                                                async function handlePaymentChange(id, action, checked) {
+                                                        async function handlePaymentChange(id, action, checked) {
             console.log(`handlePaymentChange called: ID=${id}, Action=${action}, Checked=${checked}`);
             try {
                         const itemRef = doc(db, 'inventory', id);
@@ -1375,15 +1382,30 @@
                     console.log('Local inventory updated:', localItem);
                 }
                 
-                // Force re-render all views to sync checkboxes
-                console.log('Rendering all views...');
-                renderAllViews();
-                console.log('All views rendered');
+                // Directly update all matching checkboxes in the DOM
+                console.log('Syncing checkboxes across all facilities...');
+                syncCheckboxesDirectly(id, action, checked);
+                
+                // Also update the current view to reflect any status changes
+                renderInventory();
                 
             } catch (error) {
                 console.error('Error updating payment:', error);
                 alert('Error updating payment: ' + error.message);
             }
+        }
+
+        function syncCheckboxesDirectly(id, action, checked) {
+            // Find all checkboxes with the same ID and action across all views
+            const checkboxes = document.querySelectorAll(`input[type="checkbox"][data-id="${id}"][data-action="${action}"]`);
+            console.log(`Found ${checkboxes.length} checkboxes to sync for ID=${id}, Action=${action}`);
+            
+            checkboxes.forEach((checkbox, index) => {
+                console.log(`Updating checkbox ${index + 1}: currently ${checkbox.checked}, setting to ${checked}`);
+                checkbox.checked = checked;
+            });
+            
+            console.log('All checkboxes synced successfully');
         }
 
         function renderAllViews() {
@@ -1423,7 +1445,7 @@
             // Restore original view
             currentView = originalView;
             
-            // Re-attach event listeners for all views
+            // Re-attach event listeners for action buttons only (checkboxes use delegation)
             attachEventListeners();
         }
 
