@@ -1367,24 +1367,25 @@
                     } else {
                         // If all pieces shipped, mark as shipped to Rob
                         updateData.status = 'Shipped to Rob';
-                                updateData.shippedToRob = true;
+                        updateData.shippedToRob = true;
                         updateData.shippedDate = now;
                     }
-                            }
-                            
-                            if (Object.keys(updateData).length > 0) {
-                                await updateDoc(itemRef, updateData);
-                            }
-                        } catch (error) {
-                            console.error('Error updating item:', error);
-                            alert('Error updating item: ' + error.message);
-                        }
+                    
+                    // Update the original item
+                    if (Object.keys(updateData).length > 0) {
+                        await updateDoc(itemRef, updateData);
                     }
+                }
+            } catch (error) {
+                console.error('Error updating item:', error);
+                alert('Error updating item: ' + error.message);
+            }
+        }
 
-                                                        async function handlePaymentChange(id, action, checked) {
+        async function handlePaymentChange(id, action, checked) {
             console.log(`handlePaymentChange called: ID=${id}, Action=${action}, Checked=${checked}`);
             try {
-                        const itemRef = doc(db, 'inventory', id);
+                const itemRef = doc(db, 'inventory', id);
                 let updateData = {};
                 
                 if (action === 'pay-production') {
@@ -1398,7 +1399,7 @@
                 console.log('Update data:', updateData);
                 
                 // Update Firebase
-                        await updateDoc(itemRef, updateData);
+                await updateDoc(itemRef, updateData);
                 console.log('Firebase updated successfully');
                 
                 // Immediately update local inventory data
