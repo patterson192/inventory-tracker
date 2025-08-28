@@ -639,15 +639,10 @@
         const appContainer = document.getElementById('app');
         const userEmail = document.getElementById('user-email');
         const logoutBtn = document.getElementById('logout-btn');
-        const productionView = document.getElementById('production-view');
-        const kellyView = document.getElementById('kelly-view');
-        const robView = document.getElementById('rob-view');
-        const productionBtn = document.getElementById('production-view-btn');
-        const kellyBtn = document.getElementById('kelly-view-btn');
-        const robBtn = document.getElementById('rob-view-btn');
+        const productionPanel = document.getElementById('production-panel');
+        const kellyPanel = document.getElementById('kelly-panel');
+        const robPanel = document.getElementById('rob-panel');
         const productionForm = document.getElementById('production-form');
-        const inventoryLogBody = document.getElementById('inventory-log');
-        const logTitle = document.getElementById('log-title');
         const loadingIndicator = document.getElementById('loading-indicator');
         const editModal = document.getElementById('edit-modal');
         const editForm = document.getElementById('edit-form');
@@ -698,12 +693,13 @@
 
         // --- Data Subscription ---
         function subscribeToInventory() {
+            loadingIndicator.classList.remove('hidden');
             onSnapshot(inventoryCollectionRef, (snapshot) => {
-                loadingIndicator.style.display = 'none';
+                loadingIndicator.classList.add('hidden');
                 inventory = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return { 
-                        id: data.id || doc.id, // Use custom ID if available, fallback to doc.id
+                        id: data.id || doc.id,
                         ...data 
                     };
                 });
@@ -711,132 +707,179 @@
                 renderInventory();
             }, (error) => {
                 console.error("Error fetching inventory:", error);
-                inventoryLogBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">Error loading data.</td></tr>`;
+                loadingIndicator.innerHTML = '<div style="color: #e74c3c;">Error loading data</div>';
             });
+        }
+
+        // --- View Switching ---
+        window.switchView = function(view) {
+            currentView = view;
+            
+            // Update active button
+            document.querySelectorAll('.facility-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update active panel
+            document.querySelectorAll('.facility-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(view + '-panel').classList.add('active');
+
+            renderInventory();
         }
 
         // --- Rendering Logic ---
         function renderInventory() {
-            inventoryLogBody.innerHTML = '';
+            const productionContainer = document.getElementById('production-inventory');
+            const kellyContainer = document.getElementById('kelly-inventory');
+            const robContainer = document.getElementById('rob-inventory');
 
             let itemsToRender = inventory;
-            if (currentView === 'rob') {
-                // Rob sees items destined for him AND items shipped from Kelly to him
+            let containerToUpdate = productionContainer;
+
+            if (currentView === 'kelly') {
+                itemsToRender = inventory.filter(item => item.destination === 'Kelly');
+                containerToUpdate = kellyContainer;
+            } else if (currentView === 'rob') {
                 itemsToRender = inventory.filter(item => 
                     item.destination === 'Rob' || item.shippedToRob === true
                 );
-            } else if (currentView === 'kelly') {
-                itemsToRender = inventory.filter(item => item.destination === 'Kelly');
+                containerToUpdate = robContainer;
             }
 
-            if (inventory.length === 0) {
-                inventoryLogBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500">No items to display.</td></tr>`;
+            if (itemsToRender.length === 0) {
+                containerToUpdate.innerHTML = '<div class="no-items">No items to display</div>';
                 return;
             }
 
-            itemsToRender.forEach(item => {
-                const row = document.createElement('tr');
-                row.className = (item.status === 'Paid and Received' || item.status === 'Paid and In Transit' || item.status === 'Receipt Generated') ? 'bg-green-50' : '';
-                
-                // Create custom status display for dual status
-                let displayStatus = item.status || 'N/A';
-                let statusColor = 'bg-gray-100 text-gray-800';
-                
-                // Check if item is paid and determine acknowledgment status
-                const isPaid = item.paidToRob || item.paidToProduction || item.paidToProductionRob;
-                const isAcknowledged = item.acknowledged || item.acknowledgedByRob;
-                
-                if (isPaid) {
-                    if (isAcknowledged) {
-                        displayStatus = 'Paid and Received';
-                        statusColor = 'bg-green-100 text-green-800';
-                    } else {
-                        displayStatus = 'Paid and In Transit';
-                        statusColor = 'bg-yellow-100 text-yellow-800';
-                    }
-                } else {
-                    // Use original status colors for non-paid items
-                    statusColor = {
-                        'In Transit': 'bg-yellow-100 text-yellow-800',
-                        'Received': 'bg-blue-100 text-blue-800',
-                        'Paid': 'bg-green-100 text-green-800',
-                        'Receipt Generated': 'bg-purple-100 text-purple-800',
-                        'Shipped to Rob': 'bg-orange-100 text-orange-800',
-                    }[item.status] || 'bg-gray-100 text-gray-800';
-                }
+            containerToUpdate.innerHTML = itemsToRender.map(item => renderInventoryItem(item)).join('');
+            attachEventListeners();
+        }
 
-                const shippedTo = item.shippedToRob ? 'Rob' : (item.destination === 'Rob' ? 'Direct to Rob' : (item.destination === 'Kelly' ? 'Kelly' : '-'));
-                
-                // Format the ID for better display
-                let displayId = 'N/A';
-                if (item.id) {
-                    // Parse the ID to format it nicely
-                    const parts = item.id.split('-');
-                    if (parts.length >= 6) {
-                        const location = parts[0];
-                        const date = `${parts[1]}-${parts[2]}-${parts[3]}`;
-                        const time = `${parts[4]}:${parts[5]}:${parts[6] || '00'}`;
-                        displayId = `${location}<br>${date}<br>${time}`;
-                    } else {
-                        displayId = item.id.replace(/-/g, ' ');
-                    }
-                }
-                
-                row.innerHTML = `
-                    <td class="px-6 py-4"><div class="text-sm text-gray-900 table-cell-truncate" title="${item.id}">${displayId}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${item.pieces}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${item.destination}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${displayStatus}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${shippedTo}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${(currentView === 'kelly' && item.destination === 'Kelly') ? 
-                            `<input type="checkbox" data-id="${item.id}" data-action="pay-production" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" ${item.paidToProduction ? 'checked' : ''}>` : 
-                            `<div class="text-sm text-gray-900">${item.paidToProduction ? 'Yes' : 'No'}</div>`
-                        }
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${(currentView === 'rob' && (item.destination === 'Rob' || item.shippedToRob === true)) ? 
-                            `<input type="checkbox" data-id="${item.id}" data-action="pay-rob" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" ${item.paidToRob ? 'checked' : ''}>` : 
-                            `<div class="text-sm text-gray-900">${item.paidToRob ? 'Yes' : 'No'}</div>`
-                        }
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${(currentView === 'rob' && item.destination === 'Rob' && !item.shippedToRob) ? 
-                            `<input type="checkbox" data-id="${item.id}" data-action="pay-production-rob" class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" ${item.paidToProductionRob ? 'checked' : ''}>` : 
-                            `<div class="text-sm text-gray-900">${item.paidToProductionRob ? 'Yes' : 'No'}</div>`
-                        }
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${generateActionButtons(item)}</td>
-                `;
-                inventoryLogBody.appendChild(row);
-            });
+        function renderInventoryItem(item) {
+            // Determine status and styling
+            const isPaid = item.paidToRob || item.paidToProduction || item.paidToProductionRob;
+            const isAcknowledged = item.acknowledged || item.acknowledgedByRob;
             
-            attachActionListeners();
+            let statusClass = '';
+            let statusBadge = '';
+            
+            if (isPaid) {
+                if (isAcknowledged) {
+                    statusClass = 'paid';
+                    statusBadge = '<span class="status-badge status-paid">Paid & Received</span>';
+                } else {
+                    statusClass = 'received';
+                    statusBadge = '<span class="status-badge status-pending">Paid & In Transit</span>';
+                }
+            } else {
+                statusClass = item.status === 'Received' ? 'received' : '';
+                statusBadge = `<span class="status-badge status-${item.status ? item.status.toLowerCase().replace(' ', '-') : 'pending'}">${item.status || 'Pending'}</span>`;
+            }
+
+            // Format ID for display
+            let displayId = 'N/A';
+            if (item.id) {
+                const parts = item.id.split('-');
+                if (parts.length >= 6) {
+                    const location = parts[0];
+                    const date = `${parts[1]}-${parts[2]}-${parts[3]}`;
+                    const time = `${parts[4]}:${parts[5]}:${parts[6] || '00'}`;
+                    displayId = `${location} • ${date} • ${time}`;
+                } else {
+                    displayId = item.id.replace(/-/g, ' ');
+                }
+            }
+
+            // Generate action buttons
+            const actionButtons = generateActionButtons(item);
+
+            // Generate payment checkboxes
+            const paymentCheckboxes = generatePaymentCheckboxes(item);
+
+            return `
+                <div class="inventory-item ${statusClass}">
+                    <div class="item-header">
+                        <div class="item-id">${displayId}</div>
+                        ${statusBadge}
+                        <div class="item-date">${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</div>
+                    </div>
+                    <div class="item-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Pieces</div>
+                            <div class="detail-value">${item.pieces || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Destination</div>
+                            <div class="detail-value">${item.destination || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Shipped To</div>
+                            <div class="detail-value">${item.shippedToRob ? 'Rob' : (item.destination === 'Rob' ? 'Direct to Rob' : item.destination)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">${item.status || 'Pending'}</div>
+                        </div>
+                    </div>
+                    ${paymentCheckboxes}
+                    ${actionButtons ? `<div class="action-buttons">${actionButtons}</div>` : ''}
+                </div>
+            `;
         }
         
         function generateActionButtons(item) {
             let buttons = '';
             
             if (currentView === 'rob') {
-                // Rob can see items destined for him OR shipped from Kelly to him
-                // For items shipped from Kelly, Rob should be able to acknowledge regardless of Kelly's acknowledgment
                 if (item.destination === 'Rob' && !item.acknowledged) {
-                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
+                    buttons += `<button class="btn btn-success" data-id="${item.id}" data-action="acknowledge">Acknowledge Shipment</button>`;
                 } else if (item.shippedToRob === true && !item.acknowledgedByRob) {
-                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
+                    buttons += `<button class="btn btn-success" data-id="${item.id}" data-action="acknowledge">Acknowledge Shipment</button>`;
                 }
             } else if (currentView === 'kelly') {
                 if (item.destination === 'Kelly' && (item.status === 'In Transit' || item.status === 'Paid') && !item.acknowledged) {
-                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Receipt</button>`;
+                    buttons += `<button class="btn btn-success" data-id="${item.id}" data-action="acknowledge">Acknowledge Receipt</button>`;
                 } else if (item.destination === 'Kelly' && ((item.status === 'Received' || item.status === 'Paid') || item.acknowledged) && !item.shippedToRob) {
-                    buttons += `<button data-id="${item.id}" data-action="ship-to-rob" class="text-blue-600 hover:text-blue-900">Ship to Rob</button>`;
+                    buttons += `<button class="btn btn-warning" data-id="${item.id}" data-action="ship-to-rob">Ship to Rob</button>`;
                 }
             } else if (currentView === 'production') {
-                buttons += `<button data-id="${item.id}" data-action="edit" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>`;
-                buttons += `<button data-id="${item.id}" data-action="delete" class="text-red-600 hover:text-red-900">Delete</button>`;
+                buttons += `<button class="btn" data-id="${item.id}" data-action="edit">Edit</button>`;
+                buttons += `<button class="btn btn-danger" data-id="${item.id}" data-action="delete">Delete</button>`;
             }
             
-            return buttons || '<span class="text-gray-400">No actions</span>';
+            return buttons;
+        }
+
+        function generatePaymentCheckboxes(item) {
+            let checkboxes = '';
+            
+            if (currentView === 'kelly' && item.destination === 'Kelly') {
+                checkboxes += `
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
+                        <label for="pay-production-${item.id}">Paid to Production</label>
+                    </div>
+                `;
+            }
+            
+            if (currentView === 'rob' && (item.destination === 'Rob' || item.shippedToRob === true)) {
+                checkboxes += `
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
+                        <label for="pay-rob-${item.id}">Paid to Rob (Maddie)</label>
+                    </div>
+                `;
+            }
+            
+            if (currentView === 'rob' && item.destination === 'Rob' && !item.shippedToRob) {
+                checkboxes += `
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="pay-production-rob-${item.id}" data-id="${item.id}" data-action="pay-production-rob" ${item.paidToProductionRob ? 'checked' : ''}>
+                        <label for="pay-production-rob-${item.id}">Paid to Production (Jack)</label>
+                    </div>
+                `;
+            }
+            
+            return checkboxes;
         }
 
         // --- Event Handling ---
@@ -876,8 +919,9 @@
             }
         });
         
-        function attachActionListeners() {
-            inventoryLogBody.querySelectorAll('button[data-id]').forEach(button => {
+        function attachEventListeners() {
+            // Action buttons
+            document.querySelectorAll('button[data-id]').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const id = e.target.dataset.id;
                     const action = e.target.dataset.action;
@@ -894,101 +938,73 @@
                         itemToDeleteId = id;
                         deleteModal.classList.remove('hidden');
                     } else {
-                        try {
-                            const itemRef = doc(db, 'inventory', id);
-                            let updateData = {};
-                            
-                            if (action === 'acknowledge') {
-                                // Add acknowledgment without changing paid status
-                                updateData.acknowledged = true;
-                                // For Rob, always set to Received. For Kelly, preserve paid status
-                                const currentItem = inventory.find(i => i.id === id);
-                                if (currentView === 'rob') {
-                                    updateData.status = 'Received';
-                                    // If this is an item shipped from Kelly, mark as acknowledged by Rob
-                                    if (currentItem.shippedToRob === true) {
-                                        updateData.acknowledgedByRob = true;
-                                    }
-                                } else if (currentItem && currentItem.status !== 'Paid') {
-                                    updateData.status = 'Received';
-                                }
-                            } else if (action === 'pay') {
-                                updateData.status = 'Paid';
-                            } else if (action === 'receipt') {
-                                updateData.status = 'Receipt Generated';
-                            } else if (action === 'ship-to-rob') {
-                                updateData.status = 'Paid and In Transit';
-                                updateData.shippedToRob = true;
-                                updateData.shippedDate = new Date();
-                            }
-                            
-                            if (Object.keys(updateData).length > 0) {
-                                console.log('Updating item:', id, 'with data:', updateData);
-                                await updateDoc(itemRef, updateData);
-                                console.log('Item updated successfully');
-                            }
-                        } catch (error) {
-                            console.error('Error updating item:', error);
-                            alert('Error updating item: ' + error.message);
+                        await handleItemAction(id, action);
+                    }
+                });
+            });
+
+            // Payment checkboxes
+            document.querySelectorAll('input[type="checkbox"][data-action]').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    const id = e.target.dataset.id;
+                    const action = e.target.dataset.action;
+                    await handlePaymentChange(id, action, e.target.checked);
+                });
+            });
+        }
+
+        async function handleItemAction(id, action) {
+            try {
+                const itemRef = doc(db, 'inventory', id);
+                let updateData = {};
+                
+                if (action === 'acknowledge') {
+                    updateData.acknowledged = true;
+                    const currentItem = inventory.find(i => i.id === id);
+                    if (currentView === 'rob') {
+                        updateData.status = 'Received';
+                        if (currentItem.shippedToRob === true) {
+                            updateData.acknowledgedByRob = true;
                         }
+                    } else if (currentItem && currentItem.status !== 'Paid') {
+                        updateData.status = 'Received';
                     }
-                });
-            });
+                } else if (action === 'ship-to-rob') {
+                    updateData.status = 'Paid and In Transit';
+                    updateData.shippedToRob = true;
+                    updateData.shippedDate = new Date();
+                }
+                
+                if (Object.keys(updateData).length > 0) {
+                    await updateDoc(itemRef, updateData);
+                }
+            } catch (error) {
+                console.error('Error updating item:', error);
+                alert('Error updating item: ' + error.message);
+            }
+        }
 
-            // Handle checkbox for Production payment (Kelly's view)
-            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-production"]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const item = inventory.find(i => i.id === id);
-                    if (item) {
-                        const itemRef = doc(db, 'inventory', id);
-                        const updateData = { paidToProduction: e.target.checked };
-                        
-                        console.log('Updating production payment for item:', id, 'with data:', updateData);
-                        await updateDoc(itemRef, updateData);
-                        console.log('Production payment updated successfully');
-                    }
-                });
-            });
-
-            // Handle checkbox for Rob payment (Rob's view)
-            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-rob"]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const item = inventory.find(i => i.id === id);
-                    if (item) {
-                        const itemRef = doc(db, 'inventory', id);
-                        const updateData = { 
-                            paidToRob: e.target.checked,
-                            status: e.target.checked ? 'Paid' : 'Received'
-                        };
-                        
-                        console.log('Updating Rob payment for item:', id, 'with data:', updateData);
-                        await updateDoc(itemRef, updateData);
-                        console.log('Rob payment updated successfully');
-                    }
-                });
-            });
-
-            // Handle checkbox for Rob's payment to Production (Rob's view)
-            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-production-rob"]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const item = inventory.find(i => i.id === id);
-                    if (item) {
-                        const itemRef = doc(db, 'inventory', id);
-                        const updateData = { 
-                            paidToProductionRob: e.target.checked,
-                            paidToProduction: e.target.checked, // Also update the main production payment field
-                            status: e.target.checked ? 'Paid' : 'In Transit'
-                        };
-                        
-                        console.log('Updating Rob payment to Production for item:', id, 'with data:', updateData);
-                        await updateDoc(itemRef, updateData);
-                        console.log('Rob payment to Production updated successfully');
-                    }
-                });
-            });
+        async function handlePaymentChange(id, action, checked) {
+            try {
+                const itemRef = doc(db, 'inventory', id);
+                let updateData = {};
+                
+                if (action === 'pay-production') {
+                    updateData.paidToProduction = checked;
+                } else if (action === 'pay-rob') {
+                    updateData.paidToRob = checked;
+                    updateData.status = checked ? 'Paid' : 'Received';
+                } else if (action === 'pay-production-rob') {
+                    updateData.paidToProductionRob = checked;
+                    updateData.paidToProduction = checked;
+                    updateData.status = checked ? 'Paid' : 'In Transit';
+                }
+                
+                await updateDoc(itemRef, updateData);
+            } catch (error) {
+                console.error('Error updating payment:', error);
+                alert('Error updating payment: ' + error.message);
+            }
         }
 
         editForm.addEventListener('submit', async (e) => {
@@ -1037,26 +1053,6 @@
 
         editCancelBtn.addEventListener('click', () => editModal.classList.add('hidden'));
         deleteCancelBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
-
-        // --- View Switching ---
-        function switchView(view) {
-            currentView = view;
-            const views = { production: productionView, kelly: kellyView, rob: robView };
-            const buttons = { production: productionBtn, kelly: kellyBtn, rob: robBtn };
-            const titles = { production: 'Full Inventory Log', kelly: 'Items for Kelly', rob: 'Items for Rob' };
-
-            for (const key in views) {
-                views[key].style.display = key === view ? 'block' : 'none';
-                buttons[key].classList.toggle('active', key === view);
-            }
-
-            logTitle.textContent = titles[view];
-            renderInventory();
-        }
-
-        productionBtn.addEventListener('click', () => switchView('production'));
-        kellyBtn.addEventListener('click', () => switchView('kelly'));
-        robBtn.addEventListener('click', () => switchView('rob'));
 
         // --- Initial Load ---
         switchView('production');
