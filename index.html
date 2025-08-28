@@ -537,6 +537,13 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.85rem;
         }
 
         .date-search {
@@ -546,7 +553,7 @@
             font-size: 0.9rem;
             transition: all 0.3s ease;
             background: white;
-            min-width: 160px;
+            min-width: 140px;
         }
 
         .date-search:focus {
@@ -731,7 +738,10 @@
                     <div class="section-header">
                         <h3>All Inventory Items</h3>
                         <div class="search-container">
-                            <input type="date" id="production-date-search" class="date-search" placeholder="Filter by date">
+                            <label class="search-label">From:</label>
+                            <input type="date" id="production-date-from" class="date-search">
+                            <label class="search-label">To:</label>
+                            <input type="date" id="production-date-to" class="date-search">
                             <button class="btn btn-small" onclick="clearDateFilter('production')">Clear</button>
                         </div>
                     </div>
@@ -750,7 +760,10 @@
                     <div class="section-header">
                         <h3>Items for Kelly</h3>
                         <div class="search-container">
-                            <input type="date" id="kelly-date-search" class="date-search" placeholder="Filter by date">
+                            <label class="search-label">From:</label>
+                            <input type="date" id="kelly-date-from" class="date-search">
+                            <label class="search-label">To:</label>
+                            <input type="date" id="kelly-date-to" class="date-search">
                             <button class="btn btn-small" onclick="clearDateFilter('kelly')">Clear</button>
                         </div>
                     </div>
@@ -769,7 +782,10 @@
                     <div class="section-header">
                         <h3>Items for Rob</h3>
                         <div class="search-container">
-                            <input type="date" id="rob-date-search" class="date-search" placeholder="Filter by date">
+                            <label class="search-label">From:</label>
+                            <input type="date" id="rob-date-from" class="date-search">
+                            <label class="search-label">To:</label>
+                            <input type="date" id="rob-date-to" class="date-search">
                             <button class="btn btn-small" onclick="clearDateFilter('rob')">Clear</button>
                         </div>
                     </div>
@@ -848,9 +864,9 @@
         let inventory = [];
         let itemToDeleteId = null;
         let dateFilters = {
-            production: null,
-            kelly: null,
-            rob: null
+            production: { from: null, to: null },
+            kelly: { from: null, to: null },
+            rob: { from: null, to: null }
         };
 
         // --- UI Elements ---
@@ -949,32 +965,59 @@
 
         // --- Date Filter Functions ---
         window.clearDateFilter = function(view) {
-            dateFilters[view] = null;
-            const searchInput = document.getElementById(`${view}-date-search`);
-            if (searchInput) searchInput.value = '';
+            dateFilters[view] = { from: null, to: null };
+            const fromInput = document.getElementById(`${view}-date-from`);
+            const toInput = document.getElementById(`${view}-date-to`);
+            if (fromInput) fromInput.value = '';
+            if (toInput) toInput.value = '';
             renderInventory();
         }
 
         function setupDateFilters() {
             ['production', 'kelly', 'rob'].forEach(view => {
-                const searchInput = document.getElementById(`${view}-date-search`);
-                if (searchInput) {
-                    searchInput.addEventListener('change', (e) => {
-                        dateFilters[view] = e.target.value;
+                const fromInput = document.getElementById(`${view}-date-from`);
+                const toInput = document.getElementById(`${view}-date-to`);
+                
+                if (fromInput) {
+                    fromInput.addEventListener('change', (e) => {
+                        dateFilters[view].from = e.target.value;
+                        renderInventory();
+                    });
+                }
+                
+                if (toInput) {
+                    toInput.addEventListener('change', (e) => {
+                        dateFilters[view].to = e.target.value;
                         renderInventory();
                     });
                 }
             });
         }
 
-        function filterByDate(items, dateFilter) {
-            if (!dateFilter) return items;
+        function filterByDateRange(items, dateFilter) {
+            if (!dateFilter.from && !dateFilter.to) return items;
             
             return items.filter(item => {
                 if (!item.createdAt) return false;
                 const itemDate = new Date(item.createdAt.seconds * 1000);
-                const filterDate = new Date(dateFilter);
-                return itemDate.toDateString() === filterDate.toDateString();
+                itemDate.setHours(0, 0, 0, 0); // Reset time for date comparison
+                
+                let matchesFrom = true;
+                let matchesTo = true;
+                
+                if (dateFilter.from) {
+                    const fromDate = new Date(dateFilter.from);
+                    fromDate.setHours(0, 0, 0, 0);
+                    matchesFrom = itemDate >= fromDate;
+                }
+                
+                if (dateFilter.to) {
+                    const toDate = new Date(dateFilter.to);
+                    toDate.setHours(23, 59, 59, 999);
+                    matchesTo = itemDate <= toDate;
+                }
+                
+                return matchesFrom && matchesTo;
             });
         }
 
@@ -999,10 +1042,11 @@
             }
 
             // Apply date filter if set
-            itemsToRender = filterByDate(itemsToRender, currentFilter);
+            itemsToRender = filterByDateRange(itemsToRender, currentFilter);
 
             if (itemsToRender.length === 0) {
-                const message = currentFilter ? 'No items found for selected date' : 'No items to display';
+                const hasDateFilter = currentFilter.from || currentFilter.to;
+                const message = hasDateFilter ? 'No items found for selected date range' : 'No items to display';
                 containerToUpdate.innerHTML = `<div class="no-items">${message}</div>`;
                 return;
             }
@@ -1117,29 +1161,70 @@
         function generatePaymentCheckboxes(item) {
             let checkboxes = '';
             
-            if (currentView === 'kelly' && item.destination === 'Kelly') {
+            // Show all relevant payment checkboxes for each view
+            if (currentView === 'production') {
+                // Production view shows all payment statuses
                 checkboxes += `
                     <div class="checkbox-group">
                         <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
-                        <label for="pay-production-${item.id}">Paid to Production</label>
+                        <label for="pay-production-${item.id}">💰 Paid to Production</label>
                     </div>
                 `;
-            }
-            
-            if (currentView === 'rob' && (item.destination === 'Rob' || item.shippedToRob === true)) {
+                
+                if (item.destination === 'Rob' || item.shippedToRob === true) {
+                    checkboxes += `
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
+                            <label for="pay-rob-${item.id}">💰 Paid to Rob (Maddie)</label>
+                        </div>
+                    `;
+                }
+                
+                if (item.destination === 'Rob' && !item.shippedToRob) {
+                    checkboxes += `
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="pay-production-rob-${item.id}" data-id="${item.id}" data-action="pay-production-rob" ${item.paidToProductionRob ? 'checked' : ''}>
+                            <label for="pay-production-rob-${item.id}">💰 Paid to Production (Jack)</label>
+                        </div>
+                    `;
+                }
+            } else if (currentView === 'kelly') {
+                checkboxes += `
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
+                        <label for="pay-production-${item.id}">💰 Paid to Production</label>
+                    </div>
+                `;
+                
+                if (item.shippedToRob === true) {
+                    checkboxes += `
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
+                            <label for="pay-rob-${item.id}">💰 Paid to Rob (Maddie)</label>
+                        </div>
+                    `;
+                }
+            } else if (currentView === 'rob') {
                 checkboxes += `
                     <div class="checkbox-group">
                         <input type="checkbox" id="pay-rob-${item.id}" data-id="${item.id}" data-action="pay-rob" ${item.paidToRob ? 'checked' : ''}>
-                        <label for="pay-rob-${item.id}">Paid to Rob (Maddie)</label>
+                        <label for="pay-rob-${item.id}">💰 Paid to Rob (Maddie)</label>
                     </div>
                 `;
-            }
-            
-            if (currentView === 'rob' && item.destination === 'Rob' && !item.shippedToRob) {
+                
+                if (item.destination === 'Rob' && !item.shippedToRob) {
+                    checkboxes += `
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="pay-production-rob-${item.id}" data-id="${item.id}" data-action="pay-production-rob" ${item.paidToProductionRob ? 'checked' : ''}>
+                            <label for="pay-production-rob-${item.id}">💰 Paid to Production (Jack)</label>
+                        </div>
+                    `;
+                }
+                
                 checkboxes += `
                     <div class="checkbox-group">
-                        <input type="checkbox" id="pay-production-rob-${item.id}" data-id="${item.id}" data-action="pay-production-rob" ${item.paidToProductionRob ? 'checked' : ''}>
-                        <label for="pay-production-rob-${item.id}">Paid to Production (Jack)</label>
+                        <input type="checkbox" id="pay-production-${item.id}" data-id="${item.id}" data-action="pay-production" ${item.paidToProduction ? 'checked' : ''}>
+                        <label for="pay-production-${item.id}">💰 Paid to Production</label>
                     </div>
                 `;
             }
@@ -1296,9 +1381,9 @@
                         }
                     }
 
-        async function handlePaymentChange(id, action, checked) {
+                async function handlePaymentChange(id, action, checked) {
             try {
-                        const itemRef = doc(db, 'inventory', id);
+                const itemRef = doc(db, 'inventory', id);
                 let updateData = {};
                 
                 if (action === 'pay-production') {
@@ -1312,7 +1397,13 @@
                     updateData.status = checked ? 'Paid' : 'In Transit';
                 }
                 
-                        await updateDoc(itemRef, updateData);
+                await updateDoc(itemRef, updateData);
+                
+                // After updating, refresh all views to sync checkboxes
+                setTimeout(() => {
+                    renderInventory();
+                }, 100);
+                
             } catch (error) {
                 console.error('Error updating payment:', error);
                 alert('Error updating payment: ' + error.message);
