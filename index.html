@@ -943,6 +943,8 @@
                 });
                 inventory.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderInventory();
+                // Setup event delegation after inventory is rendered
+                setupPaymentCheckboxDelegation();
             }, (error) => {
                 console.error("Error fetching inventory:", error);
                 loadingIndicator.innerHTML = '<div style="color: #e74c3c;">Error loading data</div>';
@@ -1062,6 +1064,8 @@
 
             containerToUpdate.innerHTML = itemsToRender.map(item => renderInventoryItem(item)).join('');
             attachEventListeners();
+            // Ensure event delegation is active after rendering
+            setupPaymentCheckboxDelegation();
         }
 
         function renderInventoryItem(item) {
@@ -1254,16 +1258,36 @@
 
         // Use event delegation for payment checkboxes to ensure they always work
         function setupPaymentCheckboxDelegation() {
+            console.log('Setting up payment checkbox delegation...');
+            
             // Remove any existing delegated listener
             document.removeEventListener('change', handleCheckboxDelegation);
+            console.log('Removed existing listener');
             
             // Add new delegated listener
             document.addEventListener('change', handleCheckboxDelegation);
+            console.log('Added new delegated listener');
+            
+            // Test if it's working by logging all checkboxes
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"][data-action]');
+            console.log(`Found ${allCheckboxes.length} payment checkboxes in DOM`);
+            allCheckboxes.forEach((checkbox, index) => {
+                console.log(`Checkbox ${index + 1}:`, {
+                    id: checkbox.dataset.id,
+                    action: checkbox.dataset.action,
+                    checked: checkbox.checked
+                });
+            });
         }
 
         async function handleCheckboxDelegation(e) {
+            console.log('Event delegation triggered for:', e.target);
+            console.log('Event target type:', e.target.type);
+            console.log('Event target dataset:', e.target.dataset);
+            
             // Check if the changed element is a payment checkbox
             if (e.target.type === 'checkbox' && e.target.dataset.action && e.target.dataset.id) {
+                console.log('Payment checkbox detected!');
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -1274,6 +1298,8 @@
                 console.log(`Delegated checkbox clicked: ID=${id}, Action=${action}, Checked=${checked}`);
                 
                 await handlePaymentChange(id, action, checked);
+            } else {
+                console.log('Not a payment checkbox or missing data attributes');
             }
         }
 
