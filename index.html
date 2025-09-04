@@ -3,202 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Tracker</title>
+    <title>Facility Inventory Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        .view-toggle-button.active {
-            background-color: #4F46E5;
-            color: white;
+        .facility-card {
+            transition: all 0.3s ease-in-out;
         }
-        .view-toggle-button {
-            transition: background-color 0.3s, color 0.3s;
+        .shipment-item {
+            border-left-width: 4px;
         }
-        .table-cell-truncate {
-            max-width: 150px;
-            white-space: normal;
-            overflow: hidden;
-            word-wrap: break-word;
+        .status-shipped {
+            border-left-color: #f59e0b; /* amber-500 */
         }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
+        .status-received {
+            border-left-color: #10b981; /* emerald-500 */
+        }
+        /* Spinner for loading state */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #4f46e5; /* Indigo */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-slate-100 text-slate-800">
 
-    <!-- Login Screen -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <div>
-                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Inventory Tracker</h2>
-                <p class="mt-2 text-center text-sm text-gray-600">Sign in to access your inventory</p>
-            </div>
-            <form id="login-form" class="mt-8 space-y-6">
-                <div class="rounded-md shadow-sm -space-y-px">
-                    <div>
-                        <label for="email" class="sr-only">Email address</label>
-                        <input id="email" name="email" type="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Email address">
-                    </div>
-                    <div>
-                        <label for="password" class="sr-only">Password</label>
-                        <input id="password" name="password" type="password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" placeholder="Password">
-                    </div>
-                </div>
-
+    <!-- Login Container -->
+    <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-3xl font-bold text-center text-slate-900 mb-2">Inventory Login</h2>
+            <p class="text-center text-slate-500 mb-6">Please sign in to continue.</p>
+            <form id="login-form" class="space-y-6">
                 <div>
-                    <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Sign in
+                    <label for="username" class="block text-sm font-medium text-slate-700">Username</label>
+                    <input type="text" id="username" name="username" required class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-600 focus:border-indigo-600" value="admin">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+                    <input type="password" id="password" name="password" required class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-600 focus:border-indigo-600" value="password">
+                </div>
+                <p id="login-error" class="text-red-500 text-sm text-center hidden">Invalid username or password.</p>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-700 hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Sign In
                     </button>
                 </div>
-                
-                <div id="login-error" class="text-red-600 text-center text-sm hidden"></div>
             </form>
         </div>
     </div>
 
-    <!-- Main App (Hidden until login) -->
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 hidden">
-        <header class="mb-8 text-center">
+    <!-- Main App Container (Initially Hidden) -->
+    <div id="app-container" class="p-4 lg:p-8 hidden">
+        <div class="max-w-7xl mx-auto pb-24">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-slate-900">Inter-Facility Inventory Tracker</h1>
+                <p class="text-lg text-slate-600 mt-2">Real-time shipment monitoring between facilities.</p>
+            </header>
+
+            <!-- Main grid for facilities -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+
+                <!-- Jack's Facility Card -->
+                <div id="jack-facility" class="facility-card bg-white rounded-xl shadow-lg p-6 flex flex-col">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-teal-200 text-teal-900 rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold">J</div>
+                        <h2 class="text-2xl font-semibold ml-4">Jack's Facility</h2>
+                    </div>
+                    
+                    <div class="bg-slate-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold mb-3 text-slate-700">Create New Shipment</h3>
+                        <form id="jack-ship-form" class="space-y-3">
+                            <div>
+                                <label for="jack-pieces" class="block text-sm font-medium text-slate-600">Number of Pieces</label>
+                                <input type="number" id="jack-pieces" name="pieces" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-600 focus:border-teal-600" placeholder="e.g., 100" required min="1">
+                            </div>
+                            <div>
+                                <label for="jack-destination" class="block text-sm font-medium text-slate-600">Destination</label>
+                                <select id="jack-destination" name="destination" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-teal-600 focus:border-teal-600">
+                                    <option value="Kelly">Kelly's Facility</option>
+                                    <option value="Rob">Rob's Facility</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="w-full bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 transition">
+                                Ship Pieces
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="flex-grow">
+                        <h3 class="font-semibold mb-3 text-slate-700">Outgoing Shipments</h3>
+                        <div id="jack-outgoing-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                            <p class="text-slate-500 text-sm">No outgoing shipments yet.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <h4 class="font-semibold text-slate-800">Total Shipped / Received:</h4>
+                        <p class="text-2xl font-bold text-teal-700">
+                            <span id="jack-total-shipped">0</span> / <span id="jack-total-received" class="text-slate-400">0</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Kelly's Facility Card -->
+                <div id="kelly-facility" class="facility-card bg-white rounded-xl shadow-lg p-6 flex flex-col">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-orange-200 text-orange-900 rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold">K</div>
+                        <h2 class="text-2xl font-semibold ml-4">Kelly's Facility</h2>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="font-semibold mb-3 text-slate-700">Incoming from Jack</h3>
+                        <div id="kelly-incoming-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                             <p class="text-slate-500 text-sm">No incoming shipments from Jack.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-50 p-4 rounded-lg mb-6">
+                        <h3 class="font-semibold mb-3 text-slate-700">Ship to Rob</h3>
+                        <form id="kelly-ship-form" class="space-y-3">
+                            <div>
+                               <label for="kelly-pieces" class="block text-sm font-medium text-slate-600">Number of Pieces</label>
+                               <input type="number" id="kelly-pieces" name="pieces" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-orange-600 focus:border-orange-600" placeholder="e.g., 50" required min="1">
+                            </div>
+                            <button type="submit" class="w-full bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-600 transition">
+                               Ship to Rob
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="flex-grow">
+                        <h3 class="font-semibold mb-3 text-slate-700">Outgoing to Rob</h3>
+                        <div id="kelly-outgoing-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                            <p class="text-slate-500 text-sm">No outgoing shipments to Rob.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <h4 class="font-semibold text-slate-800">Total Shipped / Received:</h4>
+                        <p class="text-2xl font-bold text-orange-700">
+                            <span id="kelly-total-shipped">0</span> / <span id="kelly-total-received">0</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rob's Facility Card -->
+                <div id="rob-facility" class="facility-card bg-white rounded-xl shadow-lg p-6 flex flex-col">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-indigo-200 text-indigo-900 rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold">R</div>
+                        <h2 class="text-2xl font-semibold ml-4">Rob's Facility</h2>
+                    </div>
+
+                    <div class="flex-grow">
+                        <h3 class="font-semibold mb-3 text-slate-700">Incoming Shipments</h3>
+                        <div id="rob-incoming-list" class="space-y-3 max-h-[40rem] overflow-y-auto pr-2">
+                            <p class="text-slate-500 text-sm">No incoming shipments.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <h4 class="font-semibold text-slate-800">Total Received:</h4>
+                        <p id="rob-total-received" class="text-2xl font-bold text-indigo-700">0</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="bg-white rounded-xl shadow-md p-4 mt-8">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <div class="md:col-span-1">
+                        <label for="start-date" class="block text-sm font-medium text-slate-700">Start Date</label>
+                        <input type="date" id="start-date" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-600 focus:border-indigo-600">
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="end-date" class="block text-sm font-medium text-slate-700">End Date</label>
+                        <input type="date" id="end-date" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-600 focus:border-indigo-600">
+                    </div>
+                    <div class="md:col-span-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button id="search-btn" class="w-full bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 transition">
+                            Search
+                        </button>
+                        <button id="reset-btn" class="w-full bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition">
+                            Reset
+                        </button>
+                        <button id="generate-summary-btn" class="w-full bg-violet-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition flex items-center justify-center space-x-2">
+                            <span>Summary</span>
+                            <span class="text-lg">✨</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gemini Summary Modal -->
+    <div id="summary-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h1 class="text-4xl font-bold text-gray-900">Inventory Tracker</h1>
-                <div class="flex items-center space-x-4">
-                    <span id="user-email" class="text-sm text-gray-600"></span>
-                    <button id="logout-btn" class="text-sm text-red-600 hover:text-red-800">Logout</button>
+                <h3 class="text-2xl font-bold text-slate-800">Shipment Summary ✨</h3>
+                <button id="close-modal-btn" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div id="summary-content" class="flex-grow overflow-y-auto pr-2">
+                <div class="flex items-center justify-center h-full">
+                    <div id="summary-loader" class="loader hidden"></div>
+                    <p id="summary-text" class="text-slate-600 whitespace-pre-wrap"></p>
+                    <p id="summary-error" class="text-red-600 hidden"></p>
                 </div>
-            </div>
-            <p class="mt-2 text-lg text-gray-600">A simple solution for tracking production and payments.</p>
-        </header>
-
-        <!-- View Toggler -->
-        <div class="flex justify-center mb-8 bg-gray-200 rounded-lg p-1 max-w-md mx-auto">
-            <button id="production-view-btn" class="view-toggle-button w-1/3 p-2 rounded-md font-semibold text-gray-700 active">Production</button>
-            <button id="kelly-view-btn" class="view-toggle-button w-1/3 p-2 rounded-md font-semibold text-gray-700">Kelly</button>
-            <button id="rob-view-btn" class="view-toggle-button w-1/3 p-2 rounded-md font-semibold text-gray-700">Rob</button>
-        </div>
-        
-        <div id="loading-indicator" class="text-center py-8">
-            <p class="text-lg font-semibold text-indigo-600">Loading Inventory Data...</p>
-        </div>
-
-        <!-- Production View -->
-        <div id="production-view">
-            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Log New Production</h2>
-                <form id="production-form" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label for="pieces" class="block text-sm font-medium text-gray-700">Number of Pieces</label>
-                        <input type="number" id="pieces" name="pieces" required class="mt-1 block w-full rounded-md border-2 border-gray-800 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                    </div>
-                    <div>
-                        <label for="destination" class="block text-sm font-medium text-gray-700">Destination</label>
-                        <select id="destination" name="destination" class="mt-1 block w-full rounded-md border-2 border-gray-800 border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                            <option value="Kelly">Kelly</option>
-                            <option value="Rob">Rob</option>
-                        </select>
-                    </div>
-                    <div class="sm:pt-6">
-                        <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add to Log</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Kelly's View -->
-        <div id="kelly-view" class="hidden">
-             <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Kelly's Receiving Portal</h2>
-                <p class="text-gray-600">Items sent to Kelly will appear here. You can acknowledge receipt and ship to Rob.</p>
-            </div>
-        </div>
-
-        <!-- Rob's View -->
-        <div id="rob-view" class="hidden">
-             <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Rob's Receiving Portal</h2>
-                <p class="text-gray-600">Items sent to Rob will appear here. You can acknowledge receipt and mark them as paid.</p>
-            </div>
-        </div>
-        
-        <!-- Inventory Log (Shared by all views) -->
-        <div class="bg-white p-6 rounded-xl shadow-md">
-            <h2 id="log-title" class="text-2xl font-bold mb-4 text-gray-800">Full Inventory Log</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location & Date</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pieces</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipped To</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Production</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Rob (Maddie)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid to Production (Jack)</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-log" class="bg-white divide-y divide-gray-200">
-                        <!-- Rows will be injected here by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4">Edit Inventory Item</h3>
-            <form id="edit-form">
-                <input type="hidden" id="edit-id">
-                <div class="mb-4">
-                    <label for="edit-pieces" class="block text-sm font-medium text-gray-700">Number of Pieces</label>
-                    <input type="number" id="edit-pieces" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-                </div>
-                <div class="mb-4">
-                    <label for="edit-destination" class="block text-sm font-medium text-gray-700">Destination</label>
-                    <select id="edit-destination" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
-                        <option value="Kelly">Kelly</option>
-                        <option value="Rob">Rob</option>
-                    </select>
-                </div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" id="edit-cancel-btn" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                    <button type="submit" class="py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-modal" class="modal-overlay hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-            <h3 class="text-xl font-bold mb-2">Confirm Deletion</h3>
-            <p class="text-gray-600 mb-4">Are you sure you want to delete this item? This action cannot be undone.</p>
-            <div class="flex justify-end space-x-2">
-                <button type="button" id="delete-cancel-btn" class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                <button type="button" id="delete-confirm-btn" class="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
             </div>
         </div>
     </div>
 
     <script type="module">
+        // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, addDoc, setDoc, onSnapshot, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -212,449 +243,331 @@
         };
         const appId = 'inventory-tracker';
 
-        // --- Initialize Firebase ---
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        setLogLevel('debug');
+        let db, auth;
+        let allShipments = []; 
+        let currentlyDisplayedShipments = [];
+        let dateFilter = { start: null, end: null };
 
-        // --- Firestore Collection Reference ---
-        const inventoryCollectionRef = collection(db, 'inventory');
-
-        // --- App State ---
-        let currentView = 'production';
-        let userId = null;
-        let inventory = [];
-        let itemToDeleteId = null;
-
-        // --- UI Elements ---
-        const loginScreen = document.getElementById('login-screen');
+        // --- DOM Element References ---
+        const loginContainer = document.getElementById('login-container');
+        const appContainer = document.getElementById('app-container');
         const loginForm = document.getElementById('login-form');
         const loginError = document.getElementById('login-error');
-        const appContainer = document.getElementById('app');
-        const userEmail = document.getElementById('user-email');
-        const logoutBtn = document.getElementById('logout-btn');
-        const productionView = document.getElementById('production-view');
-        const kellyView = document.getElementById('kelly-view');
-        const robView = document.getElementById('rob-view');
-        const productionBtn = document.getElementById('production-view-btn');
-        const kellyBtn = document.getElementById('kelly-view-btn');
-        const robBtn = document.getElementById('rob-view-btn');
-        const productionForm = document.getElementById('production-form');
-        const inventoryLogBody = document.getElementById('inventory-log');
-        const logTitle = document.getElementById('log-title');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        const editModal = document.getElementById('edit-modal');
-        const editForm = document.getElementById('edit-form');
-        const editCancelBtn = document.getElementById('edit-cancel-btn');
-        const deleteModal = document.getElementById('delete-modal');
-        const deleteCancelBtn = document.getElementById('delete-cancel-btn');
-        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+        const jackForm = document.getElementById('jack-ship-form');
+        const kellyForm = document.getElementById('kelly-ship-form');
+        const jackOutgoingList = document.getElementById('jack-outgoing-list');
+        const kellyIncomingList = document.getElementById('kelly-incoming-list');
+        const kellyOutgoingList = document.getElementById('kelly-outgoing-list');
+        const robIncomingList = document.getElementById('rob-incoming-list');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const searchBtn = document.getElementById('search-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const generateSummaryBtn = document.getElementById('generate-summary-btn');
+        const summaryModal = document.getElementById('summary-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const summaryLoader = document.getElementById('summary-loader');
+        const summaryText = document.getElementById('summary-text');
+        const summaryError = document.getElementById('summary-error');
 
-        // --- Authentication ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                userEmail.textContent = user.email;
-                loginScreen.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                subscribeToInventory();
-            } else {
-                loginScreen.classList.remove('hidden');
-                appContainer.classList.add('hidden');
-                userId = null;
-            }
-        });
-
-        // --- Login Form Handler ---
-        loginForm.addEventListener('submit', async (e) => {
+        // --- Login Logic ---
+        loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const email = loginForm.email.value;
+            const username = loginForm.username.value;
             const password = loginForm.password.value;
-            
-            try {
+
+            if (username === 'admin' && password === 'password') {
+                sessionStorage.setItem('isLoggedIn', 'true'); // Persist login state
                 loginError.classList.add('hidden');
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                console.error("Login failed:", error);
-                loginError.textContent = "Invalid email or password. Please try again.";
+                loginContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                
+                initializeAppAndAuth();
+            } else {
                 loginError.classList.remove('hidden');
             }
         });
-
-        // --- Logout Handler ---
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Logout failed:", error);
+        
+        // --- Page Load Logic ---
+        function checkLoginState() {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                loginContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                initializeAppAndAuth();
             }
-        });
-
-        // --- Data Subscription ---
-        function subscribeToInventory() {
-            onSnapshot(inventoryCollectionRef, (snapshot) => {
-                loadingIndicator.style.display = 'none';
-                inventory = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return { 
-                        id: data.id || doc.id, // Use custom ID if available, fallback to doc.id
-                        ...data 
-                    };
-                });
-                inventory.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                renderInventory();
-            }, (error) => {
-                console.error("Error fetching inventory:", error);
-                inventoryLogBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">Error loading data.</td></tr>`;
-            });
         }
 
-        // --- Rendering Logic ---
-        function renderInventory() {
-            inventoryLogBody.innerHTML = '';
+        function initializeAppAndAuth() {
+            // This check prevents re-initializing Firebase if the function is called multiple times.
+            if (auth) return; 
 
-            let itemsToRender = inventory;
-            if (currentView === 'rob') {
-                // Rob sees items destined for him AND items shipped from Kelly to him
-                itemsToRender = inventory.filter(item => 
-                    item.destination === 'Rob' || item.shippedToRob === true
-                );
-            } else if (currentView === 'kelly') {
-                itemsToRender = inventory.filter(item => item.destination === 'Kelly');
-            }
-
-            if (inventory.length === 0) {
-                inventoryLogBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500">No items to display.</td></tr>`;
-                return;
-            }
-
-            itemsToRender.forEach(item => {
-                const row = document.createElement('tr');
-                row.className = (item.status === 'Paid and Received' || item.status === 'Paid and In Transit' || item.status === 'Receipt Generated') ? 'bg-green-50' : '';
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
                 
-                // Create custom status display for dual status
-                let displayStatus = item.status || 'N/A';
-                let statusColor = 'bg-gray-100 text-gray-800';
-                
-                // Check if item is paid and determine acknowledgment status
-                const isPaid = item.paidToRob || item.paidToProduction || item.paidToProductionRob;
-                const isAcknowledged = item.acknowledged || item.acknowledgedByRob;
-                
-                if (isPaid) {
-                    if (isAcknowledged) {
-                        displayStatus = 'Paid and Received';
-                        statusColor = 'bg-green-100 text-green-800';
-                    } else {
-                        displayStatus = 'Paid and In Transit';
-                        statusColor = 'bg-yellow-100 text-yellow-800';
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log('Firebase user authenticated, initializing app logic.');
+                        initializeAppLogic();
                     }
+                });
+
+                signInUser(); // Authenticate with Firebase backend
+            } catch (e) {
+                console.error("Firebase initialization failed:", e);
+                document.body.innerHTML = '<div class="text-center p-8 bg-red-100 text-red-800">Could not connect to the database. Please check the console for errors.</div>';
+            }
+        }
+        
+        // --- Core Functions ---
+        function filterAndRender() {
+            let shipmentsToRender = [...allShipments];
+
+            if (dateFilter.start && dateFilter.end) {
+                const endOfDay = new Date(dateFilter.end);
+                endOfDay.setHours(23, 59, 59, 999);
+                
+                shipmentsToRender = shipmentsToRender.filter(shipment => {
+                    if (!shipment.createdAt || !shipment.createdAt.toDate) return false;
+                    const shipmentDate = shipment.createdAt.toDate();
+                    return shipmentDate >= dateFilter.start && shipmentDate <= endOfDay;
+                });
+            }
+            currentlyDisplayedShipments = shipmentsToRender;
+            renderShipments(shipmentsToRender);
+        }
+
+        function renderShipments(shipments) {
+            jackOutgoingList.innerHTML = '';
+            kellyIncomingList.innerHTML = '';
+            kellyOutgoingList.innerHTML = '';
+            robIncomingList.innerHTML = '';
+
+            const jackOut = shipments.filter(s => s.origin === 'Jack');
+            const kellyIn = shipments.filter(s => s.destination === 'Kelly');
+            const kellyOut = shipments.filter(s => s.origin === 'Kelly');
+            const robIn = shipments.filter(s => s.destination === 'Rob');
+
+            jackOut.length > 0 ? jackOut.forEach(s => jackOutgoingList.appendChild(createShipmentElement(s, 'jack'))) : jackOutgoingList.innerHTML = '<p class="text-slate-500 text-sm">No matching shipments.</p>';
+            kellyIn.length > 0 ? kellyIn.forEach(s => kellyIncomingList.appendChild(createShipmentElement(s, 'kelly'))) : kellyIncomingList.innerHTML = '<p class="text-slate-500 text-sm">No matching shipments.</p>';
+            kellyOut.length > 0 ? kellyOut.forEach(s => kellyOutgoingList.appendChild(createShipmentElement(s, 'kelly-out'))) : kellyOutgoingList.innerHTML = '<p class="text-slate-500 text-sm">No matching shipments.</p>';
+            robIn.length > 0 ? robIn.forEach(s => robIncomingList.appendChild(createShipmentElement(s, 'rob'))) : robIncomingList.innerHTML = '<p class="text-slate-500 text-sm">No matching shipments.</p>';
+            
+            const jackTotalShipped = jackOut.reduce((sum, s) => sum + s.pieces, 0);
+            const kellyTotalShipped = kellyOut.reduce((sum, s) => sum + s.pieces, 0);
+            const kellyTotalReceived = kellyIn.filter(s => s.status === 'Received').reduce((sum, s) => sum + s.pieces, 0);
+            const robTotalReceived = robIn.filter(s => s.status === 'Received').reduce((sum, s) => sum + s.pieces, 0);
+
+            document.getElementById('jack-total-shipped').textContent = jackTotalShipped.toLocaleString();
+            document.getElementById('jack-total-received').textContent = (0).toLocaleString();
+            document.getElementById('kelly-total-shipped').textContent = kellyTotalShipped.toLocaleString();
+            document.getElementById('kelly-total-received').textContent = kellyTotalReceived.toLocaleString();
+            document.getElementById('rob-total-received').textContent = robTotalReceived.toLocaleString();
+        }
+
+        function createShipmentElement(shipment, perspective) {
+            const div = document.createElement('div');
+            const statusClass = shipment.status === 'Shipped' ? 'status-shipped' : 'status-received';
+            div.className = `shipment-item bg-slate-50 rounded-lg p-3 shadow-sm ${statusClass}`;
+
+            const statusIndicator = shipment.status === 'Received' 
+                ? `<span class="text-xs font-bold text-green-700 bg-green-100 py-1 px-2 rounded-full">RECEIVED</span>`
+                : `<span class="text-xs font-bold text-amber-700 bg-amber-100 py-1 px-2 rounded-full">SHIPPED</span>`;
+            
+            let dateString = 'Date not available';
+            if (shipment.createdAt && shipment.createdAt.toDate) {
+                const date = shipment.createdAt.toDate();
+                dateString = date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+            }
+
+            let content = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-slate-800">${shipment.pieces} pieces</p>
+                        <p class="text-sm text-slate-500">To: ${shipment.destination} from ${shipment.origin}</p>
+                        <p class="text-xs text-slate-400 mt-1">${dateString}</p>
+                    </div>
+                    ${statusIndicator}
+                </div>
+            `;
+            
+            let controls = '<div class="mt-3 pt-3 border-t border-slate-200 flex items-center justify-between">';
+            const isPaid = shipment.paid ? 'checked' : '';
+            
+            controls += `
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" data-id="${shipment.id}" class="paid-checkbox h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" ${isPaid}>
+                    <span class="text-sm font-medium text-slate-700">Paid</span>
+                </label>
+            `;
+
+            if ((perspective === 'kelly' || perspective === 'rob') && shipment.status === 'Shipped') {
+                controls += `
+                    <button data-id="${shipment.id}" class="acknowledge-btn text-sm bg-green-500 text-white font-semibold py-1 px-3 rounded-md hover:bg-green-600 transition">
+                        Acknowledge
+                    </button>`;
+            }
+            controls += '</div>';
+
+            content += controls;
+            div.innerHTML = content;
+            return div;
+        }
+
+        async function generateSummary(shipmentData) {
+            summaryText.textContent = '';
+            summaryError.classList.add('hidden');
+            summaryLoader.classList.remove('hidden');
+
+            const systemPrompt = "You are an expert inventory analyst. Your task is to create a clear, concise, and professional summary of shipment data for a logistics report. Focus on total pieces moved, movements between specific facilities, and the overall status of shipments (e.g., how many are shipped vs. received). Start with a high-level overview and then provide a bulleted list of key movements.";
+            
+            const simplifiedData = shipmentData.map(s => ({
+                from: s.origin, to: s.destination, pieces: s.pieces,
+                status: s.status, paid: s.paid
+            }));
+
+            const userQuery = `Please summarize the following shipment data:\n${JSON.stringify(simplifiedData, null, 2)}`;
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    summaryText.textContent = text;
                 } else {
-                    // Use original status colors for non-paid items
-                    statusColor = {
-                        'In Transit': 'bg-yellow-100 text-yellow-800',
-                        'Received': 'bg-blue-100 text-blue-800',
-                        'Paid': 'bg-green-100 text-green-800',
-                        'Receipt Generated': 'bg-purple-100 text-purple-800',
-                        'Shipped to Rob': 'bg-orange-100 text-orange-800',
-                    }[item.status] || 'bg-gray-100 text-gray-800';
+                    throw new Error("No content received from API.");
                 }
-
-                const shippedTo = item.shippedToRob ? 'Rob' : (item.destination === 'Rob' ? 'Direct to Rob' : (item.destination === 'Kelly' ? 'Kelly' : '-'));
-                
-                // Format the ID for better display
-                let displayId = 'N/A';
-                if (item.id) {
-                    // Parse the ID to format it nicely
-                    const parts = item.id.split('-');
-                    if (parts.length >= 6) {
-                        const location = parts[0];
-                        const date = `${parts[1]}-${parts[2]}-${parts[3]}`;
-                        const time = `${parts[4]}:${parts[5]}:${parts[6] || '00'}`;
-                        displayId = `${location}<br>${date}<br>${time}`;
-                    } else {
-                        displayId = item.id.replace(/-/g, ' ');
-                    }
-                }
-                
-                row.innerHTML = `
-                    <td class="px-6 py-4"><div class="text-sm text-gray-900 table-cell-truncate" title="${item.id}">${displayId}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${item.pieces}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${item.destination}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">${displayStatus}</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-900">${shippedTo}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${(currentView === 'kelly' && item.destination === 'Kelly') ? 
-                            `<input type="checkbox" data-id="${item.id}" data-action="pay-production" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" ${item.paidToProduction ? 'checked' : ''}>` : 
-                            `<div class="text-sm text-gray-900">${item.paidToProduction ? 'Yes' : 'No'}</div>`
-                        }
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${(currentView === 'rob' && (item.destination === 'Rob' || item.shippedToRob === true)) ? 
-                            `<input type="checkbox" data-id="${item.id}" data-action="pay-rob" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" ${item.paidToRob ? 'checked' : ''}>` : 
-                            `<div class="text-sm text-gray-900">${item.paidToRob ? 'Yes' : 'No'}</div>`
-                        }
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        ${(currentView === 'rob' && item.destination === 'Rob' && !item.shippedToRob) ? 
-                            `<input type="checkbox" data-id="${item.id}" data-action="pay-production-rob" class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded" ${item.paidToProductionRob ? 'checked' : ''}>` : 
-                            `<div class="text-sm text-gray-900">${item.paidToProductionRob ? 'Yes' : 'No'}</div>`
-                        }
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${generateActionButtons(item)}</td>
-                `;
-                inventoryLogBody.appendChild(row);
-            });
-            
-            attachActionListeners();
-        }
-        
-        function generateActionButtons(item) {
-            let buttons = '';
-            
-            if (currentView === 'rob') {
-                // Rob can see items destined for him OR shipped from Kelly to him
-                // For items shipped from Kelly, Rob should be able to acknowledge regardless of Kelly's acknowledgment
-                if (item.destination === 'Rob' && !item.acknowledged) {
-                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
-                } else if (item.shippedToRob === true && !item.acknowledgedByRob) {
-                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Shipment</button>`;
-                }
-            } else if (currentView === 'kelly') {
-                if (item.destination === 'Kelly' && (item.status === 'In Transit' || item.status === 'Paid') && !item.acknowledged) {
-                    buttons += `<button data-id="${item.id}" data-action="acknowledge" class="text-indigo-600 hover:text-indigo-900">Acknowledge Receipt</button>`;
-                } else if (item.destination === 'Kelly' && ((item.status === 'Received' || item.status === 'Paid') || item.acknowledged) && !item.shippedToRob) {
-                    buttons += `<button data-id="${item.id}" data-action="ship-to-rob" class="text-blue-600 hover:text-blue-900">Ship to Rob</button>`;
-                }
-            } else if (currentView === 'production') {
-                buttons += `<button data-id="${item.id}" data-action="edit" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>`;
-                buttons += `<button data-id="${item.id}" data-action="delete" class="text-red-600 hover:text-red-900">Delete</button>`;
-            }
-            
-            return buttons || '<span class="text-gray-400">No actions</span>';
-        }
-
-        // --- Event Handling ---
-        productionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const pieces = parseInt(productionForm.pieces.value, 10);
-            const destination = productionForm.destination.value;
-            if (!pieces || pieces <= 0) return;
-
-            try {
-                // Generate item ID using location and date
-                const now = new Date();
-                const location = destination;
-                const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-                const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS format
-                const itemId = `${location}-${dateStr}-${timeStr}`;
-                
-                const newItem = {
-                    id: itemId,
-                    pieces,
-                    destination,
-                    status: (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A',
-                    createdAt: now,
-                    location: location,
-                    productionDate: dateStr
-                };
-                console.log('Adding new item:', newItem);
-                
-                // Use setDoc with custom ID instead of addDoc
-                const itemRef = doc(db, 'inventory', itemId);
-                await setDoc(itemRef, newItem);
-                console.log('Item added successfully with ID:', itemId);
-                productionForm.reset();
             } catch (error) {
-                console.error('Error adding item:', error);
-                alert('Error saving item: ' + error.message);
+                console.error("Error calling Gemini API:", error);
+                summaryError.textContent = `Failed to generate summary. Please try again. Error: ${error.message}`;
+                summaryError.classList.remove('hidden');
+            } finally {
+                summaryLoader.classList.add('hidden');
             }
-        });
-        
-        function attachActionListeners() {
-            inventoryLogBody.querySelectorAll('button[data-id]').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const id = e.target.dataset.id;
-                    const action = e.target.dataset.action;
-                    
-                    if (action === 'edit') {
-                        const item = inventory.find(i => i.id === id);
-                        if(item) {
-                            editModal.querySelector('#edit-id').value = id;
-                            editModal.querySelector('#edit-pieces').value = item.pieces;
-                            editModal.querySelector('#edit-destination').value = item.destination;
-                            editModal.classList.remove('hidden');
-                        }
-                    } else if (action === 'delete') {
-                        itemToDeleteId = id;
-                        deleteModal.classList.remove('hidden');
-                    } else {
-                        try {
-                            const itemRef = doc(db, 'inventory', id);
-                            let updateData = {};
-                            
-                            if (action === 'acknowledge') {
-                                // Add acknowledgment without changing paid status
-                                updateData.acknowledged = true;
-                                // For Rob, always set to Received. For Kelly, preserve paid status
-                                const currentItem = inventory.find(i => i.id === id);
-                                if (currentView === 'rob') {
-                                    updateData.status = 'Received';
-                                    // If this is an item shipped from Kelly, mark as acknowledged by Rob
-                                    if (currentItem.shippedToRob === true) {
-                                        updateData.acknowledgedByRob = true;
-                                    }
-                                } else if (currentItem && currentItem.status !== 'Paid') {
-                                    updateData.status = 'Received';
-                                }
-                            } else if (action === 'pay') {
-                                updateData.status = 'Paid';
-                            } else if (action === 'receipt') {
-                                updateData.status = 'Receipt Generated';
-                            } else if (action === 'ship-to-rob') {
-                                updateData.status = 'Paid and In Transit';
-                                updateData.shippedToRob = true;
-                                updateData.shippedDate = new Date();
-                            }
-                            
-                            if (Object.keys(updateData).length > 0) {
-                                console.log('Updating item:', id, 'with data:', updateData);
-                                await updateDoc(itemRef, updateData);
-                                console.log('Item updated successfully');
-                            }
-                        } catch (error) {
-                            console.error('Error updating item:', error);
-                            alert('Error updating item: ' + error.message);
-                        }
-                    }
-                });
-            });
-
-            // Handle checkbox for Production payment (Kelly's view)
-            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-production"]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const item = inventory.find(i => i.id === id);
-                    if (item) {
-                        const itemRef = doc(db, 'inventory', id);
-                        const updateData = { paidToProduction: e.target.checked };
-                        
-                        console.log('Updating production payment for item:', id, 'with data:', updateData);
-                        await updateDoc(itemRef, updateData);
-                        console.log('Production payment updated successfully');
-                    }
-                });
-            });
-
-            // Handle checkbox for Rob payment (Rob's view)
-            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-rob"]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const item = inventory.find(i => i.id === id);
-                    if (item) {
-                        const itemRef = doc(db, 'inventory', id);
-                        const updateData = { 
-                            paidToRob: e.target.checked,
-                            status: e.target.checked ? 'Paid' : 'Received'
-                        };
-                        
-                        console.log('Updating Rob payment for item:', id, 'with data:', updateData);
-                        await updateDoc(itemRef, updateData);
-                        console.log('Rob payment updated successfully');
-                    }
-                });
-            });
-
-            // Handle checkbox for Rob's payment to Production (Rob's view)
-            inventoryLogBody.querySelectorAll('input[type="checkbox"][data-action="pay-production-rob"]').forEach(checkbox => {
-                checkbox.addEventListener('change', async (e) => {
-                    const id = e.target.dataset.id;
-                    const item = inventory.find(i => i.id === id);
-                    if (item) {
-                        const itemRef = doc(db, 'inventory', id);
-                        const updateData = { 
-                            paidToProductionRob: e.target.checked,
-                            paidToProduction: e.target.checked, // Also update the main production payment field
-                            status: e.target.checked ? 'Paid' : 'In Transit'
-                        };
-                        
-                        console.log('Updating Rob payment to Production for item:', id, 'with data:', updateData);
-                        await updateDoc(itemRef, updateData);
-                        console.log('Rob payment to Production updated successfully');
-                    }
-                });
-            });
         }
 
-        editForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = editForm['edit-id'].value;
-            const pieces = parseInt(editForm['edit-pieces'].value, 10);
-            const destination = editForm['edit-destination'].value;
+        let appLogicInitialized = false;
+        function initializeAppLogic() {
+            if (appLogicInitialized) return;
+            appLogicInitialized = true;
+
+            const shipmentsCollection = collection(db, 'inventory');
+
+            jackForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pieces = parseInt(jackForm.pieces.value, 10);
+                if (pieces > 0) {
+                    await addDoc(shipmentsCollection, {
+                        origin: 'Jack', destination: jackForm.destination.value, pieces,
+                        status: 'Shipped', paid: false, createdAt: serverTimestamp()
+                    });
+                    jackForm.reset();
+                }
+            });
             
-            if (id && pieces > 0) {
-                try {
-                    const itemRef = doc(db, 'inventory', id);
-                    const currentItem = inventory.find(i => i.id === id);
-                    
-                    const updateData = { pieces, destination };
-
-                    if (currentItem.destination !== destination) {
-                        updateData.status = (destination === 'Rob' || destination === 'Kelly') ? 'In Transit' : 'N/A';
-                    }
-
-                    console.log('Updating item:', id, 'with data:', updateData);
-                    await updateDoc(itemRef, updateData);
-                    console.log('Item updated successfully');
-                    editModal.classList.add('hidden');
-                } catch (error) {
-                    console.error('Error updating item:', error);
-                    alert('Error updating item: ' + error.message);
+            kellyForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pieces = parseInt(kellyForm.pieces.value, 10);
+                if (pieces > 0) {
+                    await addDoc(shipmentsCollection, {
+                        origin: 'Kelly', destination: 'Rob', pieces,
+                        status: 'Shipped', paid: false, createdAt: serverTimestamp()
+                    });
+                    kellyForm.reset();
                 }
-            }
-        });
+            });
 
-        deleteConfirmBtn.addEventListener('click', async () => {
-            if (itemToDeleteId) {
-                try {
-                    const itemRef = doc(db, 'inventory', itemToDeleteId);
-                    console.log('Deleting item:', itemToDeleteId);
-                    await deleteDoc(itemRef);
-                    console.log('Item deleted successfully');
-                    deleteModal.classList.add('hidden');
-                    itemToDeleteId = null;
-                } catch (error) {
-                    console.error('Error deleting item:', error);
-                    alert('Error deleting item: ' + error.message);
+            document.body.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('acknowledge-btn')) {
+                    const shipmentId = e.target.dataset.id;
+                    const shipmentRef = doc(db, 'inventory', shipmentId);
+                    await updateDoc(shipmentRef, { status: 'Received' });
                 }
-            }
-        });
+            });
+            
+            document.body.addEventListener('change', async (e) => {
+                if (e.target.classList.contains('paid-checkbox')) {
+                    const shipmentId = e.target.dataset.id;
+                    const isPaid = e.target.checked;
+                    const shipmentRef = doc(db, 'inventory', shipmentId);
+                    await updateDoc(shipmentRef, { paid: isPaid });
+                }
+            });
 
-        editCancelBtn.addEventListener('click', () => editModal.classList.add('hidden'));
-        deleteCancelBtn.addEventListener('click', () => deleteModal.classList.add('hidden'));
+            searchBtn.addEventListener('click', () => {
+                if (startDateInput.value && endDateInput.value) {
+                    dateFilter.start = new Date(startDateInput.value);
+                    dateFilter.end = new Date(endDateInput.value);
+                    filterAndRender();
+                }
+            });
 
-        // --- View Switching ---
-        function switchView(view) {
-            currentView = view;
-            const views = { production: productionView, kelly: kellyView, rob: robView };
-            const buttons = { production: productionBtn, kelly: kellyBtn, rob: robBtn };
-            const titles = { production: 'Full Inventory Log', kelly: 'Items for Kelly', rob: 'Items for Rob' };
+            resetBtn.addEventListener('click', () => {
+                startDateInput.value = '';
+                endDateInput.value = '';
+                dateFilter.start = null;
+                dateFilter.end = null;
+                filterAndRender();
+            });
 
-            for (const key in views) {
-                views[key].style.display = key === view ? 'block' : 'none';
-                buttons[key].classList.toggle('active', key === view);
-            }
+            generateSummaryBtn.addEventListener('click', () => {
+                summaryModal.classList.remove('hidden');
+                summaryModal.classList.add('flex');
+                if (currentlyDisplayedShipments.length > 0) {
+                    generateSummary(currentlyDisplayedShipments);
+                } else {
+                    summaryText.textContent = "No shipments to summarize. Please create or filter shipments to see a summary.";
+                }
+            });
 
-            logTitle.textContent = titles[view];
-            renderInventory();
+            closeModalBtn.addEventListener('click', () => {
+                summaryModal.classList.add('hidden');
+                summaryModal.classList.remove('flex');
+            });
+            
+            summaryModal.addEventListener('click', (e) => {
+                if (e.target === summaryModal) {
+                    summaryModal.classList.add('hidden');
+                    summaryModal.classList.remove('flex');
+                }
+            });
+
+            onSnapshot(query(collection(db, 'inventory')), (snapshot) => {
+                allShipments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allShipments.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                filterAndRender();
+            });
         }
 
-        productionBtn.addEventListener('click', () => switchView('production'));
-        kellyBtn.addEventListener('click', () => switchView('kelly'));
-        robBtn.addEventListener('click', () => switchView('rob'));
-
-        // --- Initial Load ---
-        switchView('production');
+        async function signInUser() {
+            try {
+                if (auth.currentUser) return; // Already signed in
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase authentication failed:", error);
+            }
+        }
+        
+        // --- Initialize the Page ---
+        checkLoginState();
     </script>
 </body>
 </html>
