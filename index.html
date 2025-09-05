@@ -45,11 +45,11 @@
             <h2 class="text-3xl font-bold text-center text-slate-900 mb-2">Inventory Login</h2>
             <p class="text-center text-slate-500 mb-6">Please sign in to continue.</p>
             <form id="login-form" class="space-y-6">
-                <div>
+            <div>
                     <label for="username" class="block text-sm font-medium text-slate-700">Username</label>
                     <input type="text" id="username" name="username" required class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-600 focus:border-indigo-600" value="admin">
-                </div>
-                <div>
+                    </div>
+                    <div>
                     <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
                     <input type="password" id="password" name="password" required class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-600 focus:border-indigo-600" value="password">
                 </div>
@@ -67,8 +67,18 @@
     <div id="app-container" class="p-4 lg:p-8 hidden">
         <div class="max-w-7xl mx-auto pb-24">
             <header class="text-center mb-8">
-                <h1 class="text-4xl font-bold text-slate-900">Inter-Facility Inventory Tracker</h1>
-                <p class="text-lg text-slate-600 mt-2">Real-time shipment monitoring between facilities.</p>
+            <div class="flex justify-between items-center mb-4">
+                    <div></div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-slate-900">Inter-Facility Inventory Tracker</h1>
+                        <p class="text-lg text-slate-600 mt-2">Real-time shipment monitoring between facilities.</p>
+                    </div>
+                    <div>
+                        <button id="logout-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition">
+                            Logout
+                        </button>
+                    </div>
+                </div>
             </header>
 
             <!-- Main grid for facilities -->
@@ -98,23 +108,23 @@
                             <button type="submit" class="w-full bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-600 transition">
                                 Ship Pieces
                             </button>
-                        </form>
+                </form>
                     </div>
 
                     <div class="flex-grow">
                         <h3 class="font-semibold mb-3 text-slate-700">Outgoing Shipments</h3>
                         <div id="jack-outgoing-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
                             <p class="text-slate-500 text-sm">No outgoing shipments yet.</p>
-                        </div>
-                    </div>
+            </div>
+        </div>
 
                     <div class="mt-4 pt-4 border-t border-slate-200">
                         <h4 class="font-semibold text-slate-800">Total Shipped / Received:</h4>
                         <p class="text-2xl font-bold text-teal-700">
                             <span id="jack-total-shipped">0</span> / <span id="jack-total-received" class="text-slate-400">0</span>
                         </p>
-                    </div>
-                </div>
+            </div>
+        </div>
 
                 <!-- Kelly's Facility Card -->
                 <div id="kelly-facility" class="facility-card bg-white rounded-xl shadow-lg p-6 flex flex-col">
@@ -127,9 +137,9 @@
                         <h3 class="font-semibold mb-3 text-slate-700">Incoming from Jack</h3>
                         <div id="kelly-incoming-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
                              <p class="text-slate-500 text-sm">No incoming shipments from Jack.</p>
-                        </div>
-                    </div>
-                    
+            </div>
+        </div>
+        
                     <div class="bg-slate-50 p-4 rounded-lg mb-6">
                         <h3 class="font-semibold mb-3 text-slate-700">Ship to Rob</h3>
                         <form id="kelly-ship-form" class="space-y-3">
@@ -141,14 +151,14 @@
                                Ship to Rob
                             </button>
                         </form>
-                    </div>
+            </div>
 
                     <div class="flex-grow">
                         <h3 class="font-semibold mb-3 text-slate-700">Outgoing to Rob</h3>
                         <div id="kelly-outgoing-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
                             <p class="text-slate-500 text-sm">No outgoing shipments to Rob.</p>
-                        </div>
-                    </div>
+        </div>
+    </div>
 
                     <div class="mt-4 pt-4 border-t border-slate-200">
                         <h4 class="font-semibold text-slate-800">Total Shipped / Received:</h4>
@@ -253,6 +263,7 @@
         const appContainer = document.getElementById('app-container');
         const loginForm = document.getElementById('login-form');
         const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
         const jackForm = document.getElementById('jack-ship-form');
         const kellyForm = document.getElementById('kelly-ship-form');
         const jackOutgoingList = document.getElementById('jack-outgoing-list');
@@ -275,7 +286,7 @@
             e.preventDefault();
             const username = loginForm.username.value;
             const password = loginForm.password.value;
-
+            
             if (username === 'admin' && password === 'password') {
                 sessionStorage.setItem('isLoggedIn', 'true'); // Persist login state
                 loginError.classList.add('hidden');
@@ -286,6 +297,15 @@
             } else {
                 loginError.classList.remove('hidden');
             }
+        });
+
+        // --- Logout Logic ---
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('isLoggedIn');
+            loginContainer.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+            loginForm.reset();
+            loginError.classList.add('hidden');
         });
         
         // --- Page Load Logic ---
@@ -573,7 +593,7 @@
                 } else {
                     await signInAnonymously(auth);
                 }
-            } catch (error) {
+                } catch (error) {
                 console.error("Firebase authentication failed:", error);
             }
         }
